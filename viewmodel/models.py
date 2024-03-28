@@ -1,8 +1,9 @@
-from PySide6.QtCore import QAbstractListModel, QAbstractTableModel, QSortFilterProxyModel, QModelIndex Signal, Slot
+from PySide6.QtCore import QAbstractListModel, QAbstractTableModel, QSortFilterProxyModel, QModelIndex, Signal, Slot
+from PySide6.QtSql import QSqlQueryModel, QSqlRelationalTableModel, QSqlDatabase, QSqlQuery, QSqlRecord
 from PySide6 import QtCore
+from PySide6.QtGui import QFont
 
-
-class entry_model(QAbstractTableModel):
+class entry_model(QSqlRelationalTableModel):
 
     def __init__(self):
         super().__init__()
@@ -58,12 +59,41 @@ class entry_model(QAbstractTableModel):
             return self._data[index.row()][8]
         return None
 
-    def headerData(section: int, orientation: QtCore.Qt.Orientation ,  role: int):
-    if (role == Qt::DisplayRole):
-        if (orientation == Qt::Horizontal & & section >= 0 & & section < this->headers.size()):
-            return this->headers[section];
-    elif (role == Qt::FontRole & & section >= 0 & & section < this->headers.size()):
-        QFont font;
-        font.setBold(true);
-        return font;
-    return QVariant();
+    def headerData(self, section: int, orientation: QtCore.Qt.Orientation ,  role: int):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Orientation.Horizontal and 0 <= section < len(self._headers):
+                print(f"headerData returns: {self._headers[section] = }")
+                return self._headers[section]
+        elif role == QtCore.Qt.FontRole and 0 <= section < len(self._headers):
+            font = QFont()
+            font.setBold(True);
+            return font
+        return None
+
+
+
+class SqlQueryModel(QSqlQueryModel):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._roleNames = {}
+
+
+    def setQuery(self, query: str, db: QSqlDatabase):
+        super().setQuery(query, db)
+        self.generateRoleNames()
+
+    def generateRoleNames(self):
+        self._roleNames = {}
+        for i in range(super().record().count()):
+            self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
+
+    def data(self, index:QModelIndex, role: int = ...):
+        if role < QtCore.Qt.UserRole:
+            return super().data(index, role)
+        else:
+            columnIdx = role - QtCore.Qt.UserRole - 1
+            modelIndex = self.index(index.row(), columnIdx)
+            return super().data(modelIndex, QtCore.Qt.DisplayRole)
+
+

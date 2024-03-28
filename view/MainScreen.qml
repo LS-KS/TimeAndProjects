@@ -8,7 +8,7 @@ import io.qt.textproperties 1.0
 
 Rectangle {
     id: mainRect
-    color: "black"
+    color: "white"
 
     Row{
         id: btnRow
@@ -57,10 +57,25 @@ Rectangle {
             width: listView.width
             height: 50
             Text {
-                text: model.name
+                text: model.topic
                 anchors.centerIn: parent
             }
         }
+    }
+    HorizontalHeaderView {
+        id: horizontalHeader
+        anchors.left: entries.left
+        anchors.top: parent.top
+        syncView: entries
+        clip: true
+    }
+
+    VerticalHeaderView {
+        id: verticalHeader
+        anchors.top: entries.top
+        anchors.left: entries.left
+        syncView: entries
+        clip: true
     }
     TableView{
         id: entries
@@ -69,9 +84,16 @@ Rectangle {
         anchors.left: topics.right
         height: parent.height*2/3
         model: DbController.entrymodel
-        delegate: EntryDelegate{
-            width: listView.width
-            height: 50
+        clip: true
+        columnSpacing: 1
+        rowSpacing: 1
+
+        delegate: Rectangle{
+            Text{
+                text: model.date
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+            }
         }
     }
 
