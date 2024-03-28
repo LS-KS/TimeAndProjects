@@ -1,0 +1,15 @@
+{
+    "files": [
+        "controller/dbcontroller.py",
+        "controller/uicontroller.py",
+        "data/TestDB.sqlite",
+        "main.py",
+        "service/report_service.py",
+        "view/CreateTopicDialog.qml",
+        "view/EntryDelegate.qml",
+        "view/LoginScreen.qml",
+        "view/MainScreen.qml",
+        "view/main.qml",
+        "viewmodel/models.py"
+    ]
+}

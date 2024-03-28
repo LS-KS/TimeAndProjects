@@ -20,7 +20,7 @@ class DbController(QtCore.QObject):
         self.db_name = ""
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
-        self._topicmodel = SqlQueryModel()
+        self._topicmodel:QSqlQueryModel = SqlQueryModel()
         self._entrymodel: QSqlRelationalTableModel = entry_model()
 
 
@@ -39,12 +39,15 @@ class DbController(QtCore.QObject):
         connection: QSqlDatabase = QSqlDatabase.addDatabase("QSQLITE", db_name)
         connection.setDatabaseName(str(db_file))
         if not connection.open(user, password):
-            print("Error:", QSqlDatabase.lastError().text())
+            print("Error:", connection.lastError().text())
             self.loginSuccess.emit(False)
             return
         if connection.isOpen():
             self.db_name = db_name
-            self._topicmodel.setQuery("SELECT topic FROM topics", db= connection)
+            self._topicmodel.setQuery(query="SELECT * FROM topics", db=connection)
+            self._topicmodel.query().prepare("SELECT * FROM topics")
+            print("0; 0: ", self._topicmodel.data(self._topicmodel.index(0,0), QtCore.Qt.DisplayRole))
+            print("0; 0: ", self._topicmodel.data(self._topicmodel.index(0,1), QtCore.Qt.DisplayRole))
             self._topicmodel.setHeaderData(0, QtCore.Qt.Horizontal, "id")
             self._topicmodel.setHeaderData(1, QtCore.Qt.Horizontal, "topic")
             self.loginSuccess.emit(True)

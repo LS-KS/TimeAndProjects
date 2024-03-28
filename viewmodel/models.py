@@ -87,13 +87,25 @@ class SqlQueryModel(QSqlQueryModel):
         self._roleNames = {}
         for i in range(super().record().count()):
             self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
+        print(f"generateRoleNames produced: {self._roleNames =}")
 
     def data(self, index:QModelIndex, role: int = ...):
+        print(f"data called with {index = }, {role = }")
         if role < QtCore.Qt.UserRole:
-            return super().data(index, role)
+            print("if here")
+            if not self.query().exec():
+                print("Error while executing", self.query().lastError().text())
+            i: int =0
+            while self.query().next():
+                data = self.query().value(index.column())
+                if i == index.row(): break
+                i +=1
         else:
+            print("else here")
             columnIdx = role - QtCore.Qt.UserRole - 1
             modelIndex = self.index(index.row(), columnIdx)
-            return super().data(modelIndex, QtCore.Qt.DisplayRole)
+            data = super().data(modelIndex, QtCore.Qt.DisplayRole)
+        print(f"fetched data: {data =} ")
+        return data
 
 

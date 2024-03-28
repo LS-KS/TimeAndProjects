@@ -4,12 +4,8 @@ import QtQuick.Layouts
 import io.qt.textproperties 1.0
 
 
-
-
 Rectangle {
     id: mainRect
-    color: "white"
-
     Row{
         id: btnRow
         Button{
@@ -56,10 +52,17 @@ Rectangle {
         delegate: Item {
             width: listView.width
             height: 50
-            Text {
-                text: model.topic
-                anchors.centerIn: parent
+            Row{
+                Text {
+                    text: model.id
+                    color: 'black'
+                }
+                Text{
+                    text: model.topic
+                    color: 'black'
+                }
             }
+
         }
     }
     HorizontalHeaderView {
