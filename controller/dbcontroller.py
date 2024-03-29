@@ -20,16 +20,18 @@ class DbController(QtCore.QObject):
         self.db_name = ""
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
-        self._topicmodel:QSqlQueryModel = SqlQueryModel()
+        self._topicmodel: QSqlQueryModel = SqlQueryModel()
         self._entrymodel: QSqlRelationalTableModel = entry_model()
 
 
     @property
     def topicmodel(self):
         return self._topicmodel
+
     @property
     def entrymodel(self):
         return self._entrymodel
+
     @QtCore.Slot(str, str, str)
     def connect(self, db_name, user, password):
         if any([db_name == "", user == "", password == ""]):
@@ -48,6 +50,7 @@ class DbController(QtCore.QObject):
             self._topicmodel.query().prepare("SELECT * FROM topics")
             print("0; 0: ", self._topicmodel.data(self._topicmodel.index(0,0), QtCore.Qt.DisplayRole))
             print("0; 0: ", self._topicmodel.data(self._topicmodel.index(0,1), QtCore.Qt.DisplayRole))
+            print(self._topicmodel.rowCount())
             self._topicmodel.setHeaderData(0, QtCore.Qt.Horizontal, "id")
             self._topicmodel.setHeaderData(1, QtCore.Qt.Horizontal, "topic")
             self.loginSuccess.emit(True)
@@ -73,11 +76,17 @@ class DbController(QtCore.QObject):
             print("Error:", db.lastError().text())
             return False
         creation_query = f"CREATE TABLE IF NOT EXISTS timecapturing ("
-        creation_query += f"id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        creation_query += f"id INTEGER PRIMARY KEY, "
         for i, column in enumerate(self.db_columns):
             creation_query += f"{column} {self.db_types[i]}, "
         creation_query += ")"
         query = QSqlQuery(creation_query)
+        query.exec()
+
+        list_query = f"CREATE TABLE IF NOT EXISTS topics ("
+        list_query += "id INTEGER PRIMARY KEY,"
+        list_query += "topic VARCHAR(100) )"
+        query = QSqlQuery(list_query)
         query.exec()
         db.close()
         return True

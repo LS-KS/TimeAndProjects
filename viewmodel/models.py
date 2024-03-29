@@ -78,7 +78,6 @@ class SqlQueryModel(QSqlQueryModel):
         super().__init__(parent)
         self._roleNames = {}
 
-
     def setQuery(self, query: str, db: QSqlDatabase):
         super().setQuery(query, db)
         self.generateRoleNames()

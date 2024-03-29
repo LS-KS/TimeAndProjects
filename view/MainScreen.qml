@@ -48,7 +48,7 @@ Rectangle {
         anchors.top: btnRow.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        model: DbController.topicmodel
+        model: DbController._topicmodel
         delegate: Item {
             width: listView.width
             height: 50
