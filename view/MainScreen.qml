@@ -9,27 +9,6 @@ Rectangle {
     id: mainRect
     color: 'black'
 
-    TableModel {
-        id: testmodel
-        TableModelColumn { display: "id" }
-        TableModelColumn { display: "topic" }
-
-        rows: [
-            {
-                "id": "1",
-                "topic": "black"
-            },
-            {
-                "id": "2",
-                "topic": "brown"
-            },
-            {
-                "id": "3",
-                "topic": "white"
-            }
-        ]
-    }
-
     Row{
         id: btnRow
         ComboBox{
@@ -76,7 +55,7 @@ Rectangle {
         anchors.top: btnRow.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        model: DbController.topicmodel
+        model: SqlQueryModel
         //model: testmodel
         delegate: Rectangle {
             implicitHeight: 50
@@ -86,6 +65,7 @@ Rectangle {
                 color: 'red'
             }
         }
+
     }
     HorizontalHeaderView {
         id: horizontalHeader

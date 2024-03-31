@@ -4,29 +4,22 @@ from PySide6.QtQml import QmlSingleton, QmlElement
 from PySide6 import QtCore
 from PySide6.QtSql import QSqlQueryModel, QSqlRelationalTableModel, QSqlDatabase, QSqlQuery
 from PySide6.QtWidgets import QTableView
-
 from viewmodel.models import SqlQueryModel
 QML_IMPORT_NAME = "io.qt.textproperties"
 QML_IMPORT_MAJOR_VERSION = 1
-
-
 
 @QmlElement
 @QmlSingleton
 class DbController(QtCore.QObject):
     loginSuccess = QtCore.Signal(bool)
     logoutSuccess = QtCore.Signal()
+    queryChanged = QtCore.Signal(str, str) # query, db_name
     def __init__(self):
         super().__init__(None)
         self.db_name = ""
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
-        self._topicmodel: SqlQueryModel = SqlQueryModel()
-        self.topicmodel = QtCore.Property(SqlQueryModel, fget= self.get_topicmodel )
-        self._entrymodel: QSqlRelationalTableModel = None
 
-    def get_topicmodel(self):
-        return self._topicmodel
     @QtCore.Slot(str, str, str)
     def connect(self, db_name, user, password):
         # catch empty inputs
@@ -43,15 +36,12 @@ class DbController(QtCore.QObject):
             print("Error:", connection.lastError().text())
             self.loginSuccess.emit(False)
             return
-        # set topicmodel data
         if connection.isOpen():
             self.db_name = db_name
-            self._topicmodel.setQuery('SELECT * FROM topics', connection)
+            self.queryChanged.emit('SELECT * FROM topics', db_name)
             self.loginSuccess.emit(True)
         else:
             self.loginSuccess.emit(False)
-        #index = QSqlQueryModel.index(self.topicmodel, 0, 1)
-        #data = self.topicmodel.data(index, QtCore.Qt.UserRole + 2)
 
 
     @QtCore.Slot(str, result = bool)

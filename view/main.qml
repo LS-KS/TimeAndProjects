@@ -85,5 +85,8 @@ ApplicationWindow{
         function onLogoutSuccess(){
             stackView.pop()
         }
+        function onQueryChanged( query, db_name){
+            SqlQueryModel.setQuery(query, db_name)
+        }
     }
 }

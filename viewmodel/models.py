@@ -1,15 +1,22 @@
 from PySide6.QtCore import QAbstractListModel, QModelIndex
+from PySide6.QtQml import QmlElement, QmlSingleton
 from PySide6.QtSql import QSqlQueryModel, QSqlDatabase, QSqlQuery
 from PySide6 import QtCore
 
+QML_IMPORT_NAME = "io.qt.textproperties"
+QML_IMPORT_MAJOR_VERSION = 1
+@QmlElement
+@QmlSingleton
 class SqlQueryModel(QSqlQueryModel):
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._roleNames = {}
 
-    def setQuery(self, query: str, db: QSqlDatabase):
-        super().setQuery(query, db)
+    @QtCore.Slot(str, str)
+    def setQuery(self, query: str, db: str):
+        connection = QSqlDatabase().database(db)
+        super().setQuery(query, connection)
         self.generateRoleNames()
 
     def generateRoleNames(self):
@@ -22,7 +29,7 @@ class SqlQueryModel(QSqlQueryModel):
         print(f"SqlQueryModel: data called with {index = }, {role = }")
         data = None
         if role < QtCore.Qt.UserRole:
-            data = super().data(item = index, role=role)
+            data = super().data(index, role)
         else:
             columnIdx = role - QtCore.Qt.UserRole - 1
             modelIndex = self.index(index.row(), columnIdx)
