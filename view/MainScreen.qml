@@ -1,16 +1,44 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.qmlmodels
 import io.qt.textproperties 1.0
 
 
 Rectangle {
     id: mainRect
+    color: 'black'
+
+    TableModel {
+        id: testmodel
+        TableModelColumn { display: "id" }
+        TableModelColumn { display: "topic" }
+
+        rows: [
+            {
+                "id": "1",
+                "topic": "black"
+            },
+            {
+                "id": "2",
+                "topic": "brown"
+            },
+            {
+                "id": "3",
+                "topic": "white"
+            }
+        ]
+    }
+
     Row{
         id: btnRow
+        ComboBox{
+            id: yearbox
+            width: 200/4
+        }
         Button{
             text: "+ Topic"
-            width: 200/3
+            width: 200/4
             enabled: true
             onClicked: {
                 console.log("Create Topic")
@@ -27,7 +55,7 @@ Rectangle {
         Button{
             text: "- Topic"
             enabled: false
-            width:200/3
+            width:200/4
             onClicked: {
                 DbController.removeTopic()
             }
@@ -42,27 +70,21 @@ Rectangle {
         }
     }
 
-    ListView{
+    TableView{
         id: topics
         width: 200
         anchors.top: btnRow.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        model: DbController._topicmodel
-        delegate: Item {
-            width: listView.width
-            height: 50
-            Row{
-                Text {
-                    text: model.id
-                    color: 'black'
-                }
-                Text{
-                    text: model.topic
-                    color: 'black'
-                }
+        model: DbController.topicmodel
+        //model: testmodel
+        delegate: Rectangle {
+            implicitHeight: 50
+            implicitWidth: 100
+            Text{
+                text: model.display
+                color: 'red'
             }
-
         }
     }
     HorizontalHeaderView {
