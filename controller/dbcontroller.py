@@ -1,9 +1,10 @@
 from pathlib import Path
 import os
-from viewmodel.models import entry_model
 from PySide6.QtQml import QmlSingleton, QmlElement
 from PySide6 import QtCore
 from PySide6.QtSql import QSqlQueryModel, QSqlRelationalTableModel, QSqlDatabase, QSqlQuery
+from PySide6.QtWidgets import QTableView
+
 from viewmodel.models import SqlQueryModel
 QML_IMPORT_NAME = "io.qt.textproperties"
 QML_IMPORT_MAJOR_VERSION = 1
@@ -20,42 +21,38 @@ class DbController(QtCore.QObject):
         self.db_name = ""
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
-        self._topicmodel: QSqlQueryModel = SqlQueryModel()
-        self._entrymodel: QSqlRelationalTableModel = entry_model()
+        self._topicmodel: SqlQueryModel = SqlQueryModel()
+        self.topicmodel = QtCore.Property(SqlQueryModel, fget= self.get_topicmodel )
+        self._entrymodel: QSqlRelationalTableModel = None
 
-
-    @property
-    def topicmodel(self):
+    def get_topicmodel(self):
         return self._topicmodel
-
-    @property
-    def entrymodel(self):
-        return self._entrymodel
-
     @QtCore.Slot(str, str, str)
     def connect(self, db_name, user, password):
+        # catch empty inputs
         if any([db_name == "", user == "", password == ""]):
             self.loginSuccess.emit(False)
             return
+        # resolve database path
         db_file = Path(__file__).resolve().parent.parent / 'data' / f"{db_name}.sqlite"
+        # establish a connection
         connection: QSqlDatabase = QSqlDatabase.addDatabase("QSQLITE", db_name)
         connection.setDatabaseName(str(db_file))
+        # open the database
         if not connection.open(user, password):
             print("Error:", connection.lastError().text())
             self.loginSuccess.emit(False)
             return
+        # set topicmodel data
         if connection.isOpen():
             self.db_name = db_name
-            self._topicmodel.setQuery(query="SELECT * FROM topics", db=connection)
-            self._topicmodel.query().prepare("SELECT * FROM topics")
-            print("0; 0: ", self._topicmodel.data(self._topicmodel.index(0,0), QtCore.Qt.DisplayRole))
-            print("0; 0: ", self._topicmodel.data(self._topicmodel.index(0,1), QtCore.Qt.DisplayRole))
-            print(self._topicmodel.rowCount())
-            self._topicmodel.setHeaderData(0, QtCore.Qt.Horizontal, "id")
-            self._topicmodel.setHeaderData(1, QtCore.Qt.Horizontal, "topic")
+            self._topicmodel.setQuery('SELECT * FROM topics', connection)
             self.loginSuccess.emit(True)
         else:
             self.loginSuccess.emit(False)
+        #index = QSqlQueryModel.index(self.topicmodel, 0, 1)
+        #data = self.topicmodel.data(index, QtCore.Qt.UserRole + 2)
+
 
     @QtCore.Slot(str, result = bool)
     def check_database_name(self, db_name) -> bool:
@@ -95,13 +92,14 @@ class DbController(QtCore.QObject):
     def disconnect(self):
         self._topicmodel.query().clear()
         self._topicmodel.clear()
-        self._entrymodel.query().clear()
-        self._entrymodel.clear()
         QSqlDatabase.removeDatabase(self.db_name)
         self.db_name = ""
         self.logoutSuccess.emit()
 
 
+    @QtCore.Slot(str)
+    def addTopic(self, topic: str):
+        pass
     @QtCore.Slot()
     def startEntry(self):
         pass
