@@ -9,6 +9,16 @@ Rectangle{
     color: "black"
     property string errorText: ""
 
+    function login(){
+        if(dbDisplay.db_valid){
+            DbController.connect(dbField.text, userField.text, passField.text)
+        }else{
+            console.log("Not ready for login.")
+            errorDisplay.text = "Login Failed! Enter valid database name or create a new one."
+            errorDisplay.visible = true
+        }
+    }
+
     function checkDB(){
         var result = DbController.check_database_name(dbField.text)
         if (result){
@@ -49,7 +59,11 @@ Rectangle{
                 id: dbField
                 width: 150
                 color: "white"
-                onTextChanged: checkDB()
+                onTextChanged: {
+                    errorDisplay.visible = false
+                    errorDisplay.text = ""
+                    checkDB()
+                }
             }
             Button{
                 id: dbCheckButton
@@ -84,6 +98,7 @@ Rectangle{
                 color: "white"
                 echoMode: TextField.Password
                 onTextChanged: checkPass()
+                KeyNavigation.tab: loginButton
             }
             Button{
                 property bool show: false
@@ -104,8 +119,10 @@ Rectangle{
                 width: 300
                 highlighted: true
                 onClicked: {
-                    DbController.connect(dbField.text, userField.text, passField.text)
+                    login()
                 }
+                Keys.onReturnPressed: login() // Enter key
+                Keys.onEnterPressed: login() // Numpad enter key
             }
         }
         Row{
