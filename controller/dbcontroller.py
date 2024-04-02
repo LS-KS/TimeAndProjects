@@ -2,9 +2,8 @@ from pathlib import Path
 import os
 from PySide6.QtQml import QmlSingleton, QmlElement
 from PySide6 import QtCore
-from PySide6.QtSql import QSqlQueryModel, QSqlRelationalTableModel, QSqlDatabase, QSqlQuery
-from PySide6.QtWidgets import QTableView
-from viewmodel.models import SqlQueryModel
+from PySide6.QtSql import QSqlDatabase, QSqlQuery
+
 QML_IMPORT_NAME = "io.qt.textproperties"
 QML_IMPORT_MAJOR_VERSION = 1
 
@@ -80,12 +79,9 @@ class DbController(QtCore.QObject):
 
     @QtCore.Slot()
     def disconnect(self):
-        self._topicmodel.query().clear()
-        self._topicmodel.clear()
         QSqlDatabase.removeDatabase(self.db_name)
         self.db_name = ""
         self.logoutSuccess.emit()
-
 
     @QtCore.Slot(str)
     def addTopic(self, topic: str):
