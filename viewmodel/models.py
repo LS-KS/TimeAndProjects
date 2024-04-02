@@ -1,13 +1,14 @@
-from PySide6.QtCore import QAbstractListModel, QModelIndex
+from PySide6.QtCore import QModelIndex
 from PySide6.QtQml import QmlElement, QmlSingleton
-from PySide6.QtSql import QSqlQueryModel, QSqlDatabase, QSqlQuery
+from PySide6.QtSql import QSqlQueryModel, QSqlDatabase
 from PySide6 import QtCore
 
 QML_IMPORT_NAME = "io.qt.textproperties"
 QML_IMPORT_MAJOR_VERSION = 1
+
 @QmlElement
 @QmlSingleton
-class SqlQueryModel(QSqlQueryModel):
+class TopicModel(QSqlQueryModel):
 
     def __init__(self, parent=None):
         super().__init__(parent)

@@ -2,8 +2,8 @@
 import QtQuick 2.0
 import QtQuick.Controls
 import QtQuick.Layouts
-import io.qt.textproperties 1.0
 
+import io.qt.textproperties 1.0
 
 Dialog{
     id: dialog

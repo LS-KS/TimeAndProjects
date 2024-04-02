@@ -1,9 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt.labs.qmlmodels
-import io.qt.textproperties 1.0
 
+import io.qt.textproperties 1.0
 
 Rectangle {
     id: mainRect
@@ -48,24 +47,47 @@ Rectangle {
             }
         }
     }
-
+    HorizontalHeaderView {
+            id: topicHeader
+            anchors.left: parent.left
+            anchors.top: btnRow.bottom
+            syncView: topics
+            clip: true
+    }
     TableView{
         id: topics
+        property int selectedRow
         width: 200
-        anchors.top: btnRow.bottom
+        anchors.top: topicHeader.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        model: SqlQueryModel
-        //model: testmodel
+        model: TopicModel
+        selectionBehavior: TableView.SelectRows
+        columnWidthProvider: function(column){
+            return column === 0 ? 20 : 100
+        }
         delegate: Rectangle {
-            implicitHeight: 50
-            implicitWidth: 100
+            id: deleRect
+            property bool selected: row == topics.selectedRow
+            implicitHeight: 30
+            implicitWidth:  100
+            color: selected? "green" : "black"
             Text{
-                text: model.display
-                color: 'red'
+                id: deleText
+                anchors.fill: parent
+                anchors.margins: 5
+                text: model.display + row
+                color: column == 0? 'grey' : 'white'
+                verticalAlignment: Text.AlignVCenter
+            }
+            MouseArea{
+                anchors.fill: parent
+                onClicked: {
+                    topics.selectedRow = row
+                    console.log("selected topic: " + row + "(row)" + deleText.text )
+                }
             }
         }
-
     }
     HorizontalHeaderView {
         id: horizontalHeader

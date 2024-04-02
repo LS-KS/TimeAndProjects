@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import io.qt.textproperties 1.0
 
+import io.qt.textproperties 1.0
 
 Rectangle{
     id: loginRect
