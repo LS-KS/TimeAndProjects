@@ -62,7 +62,9 @@ Rectangle {
     }
     TableView{
         id: topics
-        property int selectedRow
+        property int selectedRow :0
+        property int topicID : 0
+        property string topic: ""
         property bool selectionActive: false
         width: parent.width/3
         anchors.top: topicHeader.bottom
@@ -91,6 +93,8 @@ Rectangle {
                 anchors.fill: parent
                 onClicked: {
                     topics.selectedRow = row
+                    topics.topicID = TopicModel.idOf(row)
+                    topics.topic = TopicModel.topicOf(row)
                     topics.selectionActive = true
                     console.log("selected topic: " + row + "(row)" + deleText.text )
                     DbController.updateEntryQuery(deleText.text)
@@ -157,10 +161,52 @@ Rectangle {
         anchors.left: topics.right
         anchors.bottom: parent.bottom
         color: "black"
+        radius: 3
         border.color: entryActive ? "green" : "black"
         ColumnLayout{
+            anchors.fill: parent
+            anchors.margins: 15
+            spacing: 15
+            id: form
+            Row{
+                id: infoRow
+                Layout.fillWidth: false
+                spacing: 15
+                Label{
+                    text: "Topic:"
+                    width: 100
+                }
+                Text{
+                    id: topicIdField
+                    text: ""
+                    color: "white"
+                }
+                Text{
+                    id: topicNameField
+                    text: ""
+                    color: "white"
+                }
+                Label{
+                    text: "Record:"
+                }
+                Text{
+                    id: recordIDField
+                    text: "N/A"
+                    color: "white"
+                }
+                Label{
+                    text: "Last saved:"
+                }
+                Text{
+                    id: savedAt
+                    text: ""
+                    color: "white"
+                }
+            }
             Row{
                 id: tagsRow
+                Layout.fillWidth: true
+                spacing: 15
                 Label{
                     id: dateLabel
                     text: "Date:"
@@ -168,8 +214,8 @@ Rectangle {
                 }
                 Text{
                     id: dateField
-                    Layout.fillWidth: true
                     text: ""
+                    color: "white"
                 }
                 Label{
                     id: startLabel
@@ -180,6 +226,7 @@ Rectangle {
                     id: startField
                     Layout.fillWidth: true
                     text: ""
+                    color: "white"
                 }
                 Label{
                     id: endLabel
@@ -189,54 +236,125 @@ Rectangle {
                 Text{
                     id: endField
                     Layout.fillWidth: true
+                    color: "white"
                     text: ""
+                }
+                Label{
+                    id: durationLabel
+                    text: "Duration"
+                    width: 100
+                }
+                Text{
+                    property var defaultSize : 8
+                    id: durationField
+                    Layout.fillWidth: true
+                    text: ""
+                    color: "white"
+                    font.pointSize: timer.running ? 20 : defaultSize
+                    Component.onCompleted: {
+                        defaultSize = font.pointSize
+                    }
                 }
             }
             Row{
                 id: descriptionRow
+                Layout.fillWidth: true
+
                 Label{
                     id: descriptionLabel
                     text: "Description:"
                     width: 100
                 }
+
                 TextArea{
                     id: textInput
-                    height: 200
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
                     text: "Enter your text here"
+                    background: Rectangle {
+                        implicitWidth: form.width -10 - descriptionLabel.width
+                        color: "black"
+                        border.color: entry.entryActive ? "#21be2b" : "transparent"
+                    }
                 }
             }
             Row{
+                id: entryBtnRow
+                Layout.fillWidth: true
                 Button{
                     id: newButton
-                    text: "New Entry with actual Topic"
-                    onClicked: {
-                        entry.entryActive = true
-                    }
-                }
-                Button{
-                    id: startButton
-                    text: "Start"
-                    onClicked: {
-                        DbController.startEntry()
-                    }
+                    text: "New Entry with actual topic"
+                    enabled: !timer.running && topics.selectionActive
+                    onClicked: startTimer()
                 }
                 Button{
                     id: stopButton
                     text: "Stop"
-                    onClicked: {
-                        DbController.endEntry()
-                    }
+                    enabled: timer.running
+                    onClicked: endTimer()
                 }
                 Button{
                     id: discardButton
                     text: "Discard"
+                    enabled: timer.running
                     onClicked: {
                         entry.entryActive = false
-                        DbController.discardEntry()
+                        timer.running = false
+                        startField.text = ""
+                        endField.text = ""
+                        durationField.text = ""
+                        textInput.text =""
+                        dateField = ""
+                        topicIdField.text = ""
+                        topicNameField.text = ""
+                        recordIDField.text = ""
+                        savedAt.text = ""
+                    }
+                }
+                Button{
+                    id: saveButton
+                    text: "Save"
+                    enabled: startField.text!= "" && textInput.text!="" && durationField.text !=""
+                    onClicked: {
+                        endTimer()
+                        entry.entryActive = false
+                        DBController.saveEntry()
                     }
                 }
             }
         }
+    }
+    Timer {
+        id: timer
+        interval: 500
+        running: false
+        repeat: true
+        onTriggered: {
+            updateDuration();
+        }
+    }
+    function updateDuration() {
+        var startTimeString = startField.text;
+        var startTimeParts = startTimeString.split(':');
+        var startTime = new Date();
+        startTime.setHours(parseInt(startTimeParts[0]));
+        startTime.setMinutes(parseInt(startTimeParts[1]));
+        startTime.setSeconds(parseInt(startTimeParts[2]));
+
+        var currentTime = new Date();
+        var diff = new Date(currentTime - startTime);
+        durationField.text = diff.toISOString().substr(11, 8);
+    }
+    function startTimer(){
+        startField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
+        dateField.text = new Date().toLocaleDateString()
+        topicIdField.text = topics.topicID
+        topicNameField.text = topics.topic
+        timer.running = true
+        entry.entryActive = true
+    }
+    function endTimer(){
+        timer.running = false
+        endField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
     }
 }

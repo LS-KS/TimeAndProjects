@@ -20,6 +20,20 @@ class TopicModel(QSqlQueryModel):
         super().setQuery(query, connection)
         self.generateRoleNames()
 
+    @QtCore.Slot(int, result=int)
+    def idOf(self, row):
+        index = self.index(row, 0)
+        data = int(self.data(index, 0))
+        print(f"TopicModel::idOf {data = }")
+        return data
+
+    @QtCore.Slot(int, result=str)
+    def topicOf(self, row):
+        index = self.index(row, 1)
+        data = str(self.data(index, 0))
+        print(f"TopicModel::topicOf {data = }")
+        return data
+
     def generateRoleNames(self):
         self._roleNames = {}
         for i in range(super().record().count()):
