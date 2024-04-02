@@ -1,12 +1,8 @@
 import sys
 from pathlib import Path
-from controller.uicontroller import UiController
-from controller.dbcontroller import DbController
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtQml import QQmlApplicationEngine, QmlElement
+from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
-
-
 
 if __name__ == "__main__":
     app = QGuiApplication(sys.argv)
