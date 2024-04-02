@@ -18,6 +18,13 @@ ApplicationWindow{
             Action { text: qsTr("&New...") }
             Action { text: qsTr("&Open...") }
             MenuSeparator { }
+            Action {
+                text: qsTr("&Show &All &Entries")
+                onTriggered: {
+                    DbController.updateEntryQuery("")
+                }
+            }
+            MenuSeparator { }
             Action { text: qsTr("&Quit") }
         }
         Menu {
