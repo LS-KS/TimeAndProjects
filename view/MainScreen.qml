@@ -63,6 +63,7 @@ Rectangle {
     TableView{
         id: topics
         property int selectedRow
+        property bool selectionActive: false
         width: parent.width/3
         anchors.top: topicHeader.bottom
         anchors.left: parent.left
@@ -77,7 +78,7 @@ Rectangle {
             property bool selected: row == topics.selectedRow
             implicitHeight: 30
             implicitWidth:  100
-            color: selected? "green" : "black"
+            color: selected && topics.selectionActive? "green" : "black"
             Text{
                 id: deleText
                 anchors.fill: parent
@@ -90,7 +91,17 @@ Rectangle {
                 anchors.fill: parent
                 onClicked: {
                     topics.selectedRow = row
+                    topics.selectionActive = true
                     console.log("selected topic: " + row + "(row)" + deleText.text )
+                    DbController.updateEntryQuery(deleText.text)
+                }
+            }
+            Connections{
+                target: DbController
+                function onTopicStandardQuery(value){
+                    if(value) {
+                        topics.selectionActive = false
+                    }
                 }
             }
         }
@@ -106,7 +117,7 @@ Rectangle {
     VerticalHeaderView {
         id: verticalHeader
         anchors.top: entries.top
-        anchors.left: entries.left
+        anchors.left: topics.right
         syncView: entries
         clip: true
     }
@@ -114,7 +125,7 @@ Rectangle {
         id: entries
         anchors.top: horizontalHeader.bottom
         anchors.right: parent.right
-        anchors.left: topics.right
+        anchors.left: verticalHeader.right
         height: parent.height*2/3
         model: EntryModel
         clip: true
@@ -140,11 +151,13 @@ Rectangle {
 
     Rectangle{
         id: entry
+        property bool entryActive: false
         anchors.top: entries.bottom
         anchors.right: parent.right
         anchors.left: topics.right
         anchors.bottom: parent.bottom
-        color: "darkgrey"
+        color: "black"
+        border.color: entryActive ? "green" : "black"
         ColumnLayout{
             Row{
                 id: tagsRow
@@ -195,6 +208,13 @@ Rectangle {
             }
             Row{
                 Button{
+                    id: newButton
+                    text: "New Entry with actual Topic"
+                    onClicked: {
+                        entry.entryActive = true
+                    }
+                }
+                Button{
                     id: startButton
                     text: "Start"
                     onClicked: {
@@ -212,6 +232,7 @@ Rectangle {
                     id: discardButton
                     text: "Discard"
                     onClicked: {
+                        entry.entryActive = false
                         DbController.discardEntry()
                     }
                 }
