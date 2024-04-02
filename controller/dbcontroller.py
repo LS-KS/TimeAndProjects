@@ -13,6 +13,7 @@ class DbController(QtCore.QObject):
     loginSuccess = QtCore.Signal(bool)
     logoutSuccess = QtCore.Signal()
     topicQueryChanged = QtCore.Signal(str, str) # query, db_name
+    topicStandardQuery = QtCore.Signal(bool) # emit if not filtered to any topic
     entryQueryChanged = QtCore.Signal(str, str) # query, db_name
     newYear = QtCore.Signal(int)
     def __init__(self):
@@ -100,6 +101,16 @@ class DbController(QtCore.QObject):
         QSqlDatabase.removeDatabase(self.db_name)
         self.db_name = ""
         self.logoutSuccess.emit()
+
+    @QtCore.Slot(str)
+    def updateEntryQuery(self, query: str):
+        if query == "":
+            self.entryQueryChanged.emit('SELECT * FROM timecapturing', self.db_name)
+            self.topicStandardQuery.emit(True)
+        else:
+            r_query = f"SELECT * FROM timecapturing WHERE topic = '{query}'"
+            print(f"updateEntryQuery: {r_query}")
+            self.entryQueryChanged.emit(r_query, self.db_name)
 
     @QtCore.Slot(str)
     def addTopic(self, topic: str):
