@@ -12,7 +12,9 @@ QML_IMPORT_MAJOR_VERSION = 1
 class DbController(QtCore.QObject):
     loginSuccess = QtCore.Signal(bool)
     logoutSuccess = QtCore.Signal()
-    queryChanged = QtCore.Signal(str, str) # query, db_name
+    topicQueryChanged = QtCore.Signal(str, str) # query, db_name
+    entryQueryChanged = QtCore.Signal(str, str) # query, db_name
+    newYear = QtCore.Signal(int)
     def __init__(self):
         super().__init__(None)
         self.db_name = ""
@@ -37,7 +39,23 @@ class DbController(QtCore.QObject):
             return
         if connection.isOpen():
             self.db_name = db_name
-            self.queryChanged.emit('SELECT * FROM topics', db_name)
+            self.topicQueryChanged.emit('SELECT * FROM topics', db_name)
+            self.entryQueryChanged.emit('SELECT * FROM timecapturing', db_name)
+
+            # get a list of all years
+            actual_year = QtCore.QDate.currentDate().year()
+            self.newYear.emit(actual_year)
+            query = QSqlQuery(db=connection)
+            query.prepare('SELECT year FROM timecapturing GROUP BY year')
+            if not query.exec():
+                print("Error executing query:", query.lastError().text())
+
+            # Iterate over the results
+            while query.next():
+                year = query.value(0)
+                print(f"query year: {year}")
+                self.newYear.emit(year)
+
             self.loginSuccess.emit(True)
         else:
             self.loginSuccess.emit(False)

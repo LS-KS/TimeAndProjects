@@ -12,11 +12,17 @@ Rectangle {
         id: btnRow
         ComboBox{
             id: yearbox
-            width: 200/4
+            width: topics.width/4
+            model: YearModel
+            textRole: "year"
+            valueRole: "year"
+            Component.onCompleted: {
+                yearbox.currentIndex = 0
+            }
         }
         Button{
             text: "+ Topic"
-            width: 200/4
+            width: topics.width/4
             enabled: true
             onClicked: {
                 console.log("Create Topic")
@@ -33,7 +39,7 @@ Rectangle {
         Button{
             text: "- Topic"
             enabled: false
-            width:200/4
+            width:topics.width/4
             onClicked: {
                 DbController.removeTopic()
             }
@@ -41,7 +47,7 @@ Rectangle {
 
         Button{
             text: "Logout"
-            width: 200/3
+            width: topics.width/4
             onClicked: {
                 DbController.disconnect()
             }
@@ -57,7 +63,7 @@ Rectangle {
     TableView{
         id: topics
         property int selectedRow
-        width: 200
+        width: parent.width/3
         anchors.top: topicHeader.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
@@ -76,7 +82,7 @@ Rectangle {
                 id: deleText
                 anchors.fill: parent
                 anchors.margins: 5
-                text: model.display + row
+                text: model.display
                 color: column == 0? 'grey' : 'white'
                 verticalAlignment: Text.AlignVCenter
             }
@@ -106,21 +112,29 @@ Rectangle {
     }
     TableView{
         id: entries
-        anchors.top: parent.top
+        anchors.top: horizontalHeader.bottom
         anchors.right: parent.right
         anchors.left: topics.right
         height: parent.height*2/3
-        model: DbController.entrymodel
+        model: EntryModel
         clip: true
         columnSpacing: 1
         rowSpacing: 1
 
         delegate: Rectangle{
+            id: entrydDelegateRect
+            implicitHeight: 30
+            implicitWidth:  100
+            color: "black"
             Text{
-                text: model.date
-                anchors.left: parent.left
-                anchors.leftMargin: 10
+                id: entrydDelegateText
+                anchors.fill: parent
+                anchors.margins: 5
+                text: model.display
+                color: 'white'
+                verticalAlignment: Text.AlignVCenter
             }
+
         }
     }
 

@@ -85,8 +85,14 @@ ApplicationWindow{
         function onLogoutSuccess(){
             stackView.pop()
         }
-        function onQueryChanged( query, db_name){
+        function onTopicQueryChanged( query, db_name){
             TopicModel.setQuery(query, db_name)
+        }
+        function onEntryQueryChanged( query, db_name){
+            EntryModel.setQuery(query, db_name)
+        }
+        function onNewYear(year){
+            YearModel.addYear(year)
         }
     }
 }
