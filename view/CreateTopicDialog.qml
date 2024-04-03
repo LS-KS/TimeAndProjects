@@ -38,7 +38,8 @@ Dialog{
                 }
             }
     onAccepted: {
-        if(topicName.text === ""){
+        console.log("Accepted")
+        if(topicName.text !== ""){
             DbController.addTopic(topicName.text)
         }
     }

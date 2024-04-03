@@ -24,14 +24,14 @@ class TopicModel(QSqlQueryModel):
     def idOf(self, row):
         index = self.index(row, 0)
         data = int(self.data(index, 0))
-        print(f"TopicModel::idOf {data = }")
+        #print(f"TopicModel::idOf {data = }")
         return data
 
     @QtCore.Slot(int, result=str)
     def topicOf(self, row):
         index = self.index(row, 1)
         data = str(self.data(index, 0))
-        print(f"TopicModel::topicOf {data = }")
+        #print(f"TopicModel::topicOf {data = }")
         return data
 
     def generateRoleNames(self):
@@ -41,7 +41,7 @@ class TopicModel(QSqlQueryModel):
         print(f"TopicModel: generateRoleNames produced: {self._roleNames =}")
 
     def data(self, index:QModelIndex, role: int = ...):
-        print(f"TopicModel: data called with {index = }, {role = }")
+        #print(f"TopicModel: data called with {index = }, {role = }")
         data = None
         if role < QtCore.Qt.UserRole:
             data = super().data(index, role)
@@ -71,7 +71,7 @@ class EntryModel(QSqlQueryModel):
         print(f"EntryModel: generateRoleNames produced: {self._roleNames =}")
 
     def data(self, index: QModelIndex, role: int = ...):
-        print(f"EntryModel: data called with {index = }, {role = }")
+        #print(f"EntryModel: data called with {index = }, {role = }")
         data = None
         if role < QtCore.Qt.UserRole:
             data = super().data(index, role)
@@ -94,7 +94,7 @@ class YearModel(QAbstractListModel):
 
     def data(self, index: QModelIndex, role: int = ...):
         if role == QtCore.Qt.UserRole + 1:
-            print(f"YearModel: data called with {index.row() = }, {role = }, about to return {self._years[index.row()]}")
+            #print(f"YearModel: data called with {index.row() = }, {role = }, about to return {self._years[index.row()]}")
             return self._years[index.row()]
 
     def roleNames(self):

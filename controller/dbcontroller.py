@@ -7,18 +7,23 @@ from PySide6.QtSql import QSqlDatabase, QSqlQuery
 QML_IMPORT_NAME = "io.qt.textproperties"
 QML_IMPORT_MAJOR_VERSION = 1
 
+
 @QmlElement
 @QmlSingleton
 class DbController(QtCore.QObject):
     loginSuccess = QtCore.Signal(bool)
     logoutSuccess = QtCore.Signal()
-    topicQueryChanged = QtCore.Signal(str, str) # query, db_name
-    topicStandardQuery = QtCore.Signal(bool) # emit if not filtered to any topic
-    entryQueryChanged = QtCore.Signal(str, str) # query, db_name
+    topicQueryChanged = QtCore.Signal(str, str)  # query, db_name
+    topicStandardQuery = QtCore.Signal(bool)  # emit if not filtered to any topic
+    entryQueryChanged = QtCore.Signal(str, str)  # query, db_name
+    entrySaved = QtCore.Signal(int, str)  # record is, timestamp
+
     newYear = QtCore.Signal(int)
+
     def __init__(self):
         super().__init__(None)
         self.db_name = ""
+        self.year = QtCore.QDate.currentDate().year()
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
 
@@ -61,8 +66,7 @@ class DbController(QtCore.QObject):
         else:
             self.loginSuccess.emit(False)
 
-
-    @QtCore.Slot(str, result = bool)
+    @QtCore.Slot(str, result=bool)
     def check_database_name(self, db_name) -> bool:
         if db_name == "":
             return False
@@ -70,7 +74,7 @@ class DbController(QtCore.QObject):
         result = os.path.exists(db_file)
         return result
 
-    @QtCore.Slot(str, str, str, result = bool)
+    @QtCore.Slot(str, str, str, result=bool)
     def create_database(self, db_name, user, password) -> bool:
         db_file = Path(__file__).resolve().parent.parent / 'data' / f"{db_name}.sqlite"
         db = QSqlDatabase.addDatabase("QSQLITE")
@@ -106,23 +110,46 @@ class DbController(QtCore.QObject):
     def updateEntryQuery(self, query: str):
         if query == "":
             self.entryQueryChanged.emit('SELECT * FROM timecapturing', self.db_name)
+            self.topicQueryChanged.emit('SELECT * FROM topics', self.db_name)
             self.topicStandardQuery.emit(True)
         else:
             r_query = f"SELECT * FROM timecapturing WHERE topic = '{query}'"
             print(f"updateEntryQuery: {r_query}")
             self.entryQueryChanged.emit(r_query, self.db_name)
 
+    @QtCore.Slot(int)
+    def setYear(self, year):
+        if self.db_name == "":
+            return
+        print(self.db_name)
+        self.year = year
+        self.topicQueryChanged.emit(
+            f"SELECT  DISTINCT  topics.id, topics.topic  FROM topics INNER JOIN timecapturing ON topics.topic = timecapturing.topic WHERE timecapturing.year = {self.year} GROUP BY topics.topic",
+            self.db_name)
+
+    @QtCore.Slot(bool, int, str, str, str, str, str, str, str, str)
+    def saveEntry(self, new_record:bool, record:int, user: str, topic: str, description: str, year: str, date: str, start: str, end: str, duration: str):
+        if new_record: # create an insert query
+            pass
+        else: # update query where id == record
+            pass
+
     @QtCore.Slot(str)
     def addTopic(self, topic: str):
-        pass
-    @QtCore.Slot()
-    def startEntry(self):
-        pass
-
-    @QtCore.Slot()
-    def endEntry(self):
-        pass
-
+        connection = QSqlDatabase.database(self.db_name)
+        r_query = f"SELECT * FROM topics WHERE topic = '{topic}';"
+        select_query = QSqlQuery(r_query, connection)
+        if not select_query.exec():
+            print("Error executing select query:", query.lastError().text())
+        if select_query.next(): # return if topic in topics
+            return
+        # perform an insertion query
+        r_query = f"INSERT INTO topics (topic) VALUES ('{topic}');"
+        insert_query = QSqlQuery(r_query, connection)
+        """if not insert_query.exec():
+            print("Error executing insert query:", insert_query.lastError().text())
+        else:
+            print(f"Topic '{topic}' added to topics")"""
     @QtCore.Slot()
     def discardEntry(self):
         pass

@@ -19,6 +19,10 @@ Rectangle {
             Component.onCompleted: {
                 yearbox.currentIndex = 0
             }
+            onCurrentValueChanged:{
+                DbController.setYear(currentValue)
+                console.log(currentValue)
+            }
         }
         Button{
             text: "+ Topic"
@@ -97,7 +101,7 @@ Rectangle {
                     topics.topic = TopicModel.topicOf(row)
                     topics.selectionActive = true
                     console.log("selected topic: " + row + "(row)" + deleText.text )
-                    DbController.updateEntryQuery(deleText.text)
+                    DbController.updateEntryQuery(topics.topic)
                 }
             }
             Connections{
@@ -212,7 +216,7 @@ Rectangle {
                     text: "Date:"
                     width: 100
                 }
-                Text{
+                TextField{
                     id: dateField
                     text: ""
                     color: "white"
@@ -222,7 +226,7 @@ Rectangle {
                     text: "Start:"
                     width: 100
                 }
-                Text{
+                TextField{
                     id: startField
                     Layout.fillWidth: true
                     text: ""
@@ -233,11 +237,14 @@ Rectangle {
                     text: "End:"
                     width: 100
                 }
-                Text{
+                TextField{
                     id: endField
                     Layout.fillWidth: true
                     color: "white"
                     text: ""
+                    onTextChanged:{
+                        updateDuration()
+                    }
                 }
                 Label{
                     id: durationLabel
@@ -245,7 +252,7 @@ Rectangle {
                     width: 100
                 }
                 Text{
-                    property var defaultSize : 8
+                    property var defaultSize : 12
                     id: durationField
                     Layout.fillWidth: true
                     text: ""
@@ -304,7 +311,7 @@ Rectangle {
                         endField.text = ""
                         durationField.text = ""
                         textInput.text =""
-                        dateField = ""
+                        dateField.text = ""
                         topicIdField.text = ""
                         topicNameField.text = ""
                         recordIDField.text = ""
@@ -318,7 +325,7 @@ Rectangle {
                     onClicked: {
                         endTimer()
                         entry.entryActive = false
-                        DBController.saveEntry()
+                        DbController.saveEntry()
                     }
                 }
             }
@@ -337,12 +344,23 @@ Rectangle {
         var startTimeString = startField.text;
         var startTimeParts = startTimeString.split(':');
         var startTime = new Date();
-        startTime.setHours(parseInt(startTimeParts[0]));
+        startTime.setHours(  parseInt(startTimeParts[0]));
         startTime.setMinutes(parseInt(startTimeParts[1]));
         startTime.setSeconds(parseInt(startTimeParts[2]));
 
         var currentTime = new Date();
-        var diff = new Date(currentTime - startTime);
+
+        if (endField.text ===""){
+            var diff = new Date(currentTime - startTime);
+        } else{
+            var endTimeString = endField.text;
+            var endTimeParts = endTimeString.split(':');
+            var endTime = new Date();
+            endTime.setHours(  parseInt(endTimeParts[0]));
+            endTime.setMinutes(parseInt(endTimeParts[1]));
+            endTime.setSeconds(parseInt(endTimeParts[2]));
+            var diff = new Date(endTime - startTime);
+        }
         durationField.text = diff.toISOString().substr(11, 8);
     }
     function startTimer(){
