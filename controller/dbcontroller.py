@@ -20,6 +20,7 @@ class DbController(QtCore.QObject):
     entrySaved = QtCore.Signal(int, str)  # record is, timestamp
     newYear = QtCore.Signal(int)
     topicDeleted = QtCore.Signal()
+    username = QtCore.Signal(str)
 
     def __init__(self):
         super().__init__(None)
@@ -49,7 +50,7 @@ class DbController(QtCore.QObject):
             self.databaseName.emit(self.db_name)
             self.topicQueryChanged.emit('SELECT * FROM topics', db_name)
             self.entryQueryChanged.emit('SELECT * FROM timecapturing', db_name)
-
+            self.username.emit(user)
             # get a list of all years
             actual_year = QtCore.QDate.currentDate().year()
             self.newYear.emit(actual_year)
@@ -141,11 +142,25 @@ class DbController(QtCore.QObject):
 
     @QtCore.Slot(bool, int, str, str, str, str, str, str, str, str)
     def saveEntry(self, new_record:bool, record:int, user: str, topic: str, description: str, year: str, date: str, start: str, end: str, duration: str):
+        connection = QSqlDatabase.database(self.db_name)
         if new_record: # create an insert query
-            pass
+            r_query = f"INSERT INTO timecapturing (user, topic, description, year, date, start, end, duration) VALUES ('{user}', '{topic}', '{description}', '{year}', '{date}', '{start}', '{end}', '{duration}');"
+            insert_query = QSqlQuery(connection)
+            insert_query.prepare(r_query)
+            if not insert_query.exec():
+                print("Error executing insert query:", insert_query.lastError().text())
+            else:
+                self.entrySaved.emit(insert_query.lastInsertId(), QtCore.QDateTime.currentDateTime().toString())
+                self.updateEntryQuery(topic)
         else: # update query where id == record
-            pass
-
+            r_query = f"Update timecapturing SET user = '{user}', topic = '{topic}', description = '{description}', year = '{year}', date = '{date}', start = '{start}', end = '{end}', duration = '{duration}' WHERE id = {record};"
+            update_query = QSqlQuery(connection)
+            update_query.prepare(r_query)
+            if not update_query.exec():
+                print("Error executing update query:", update_query.lastError().text())
+            else:
+                self.entrySaved.emit(record, QtCore.QDateTime.currentDateTime().toString())
+                self.updateEntryQuery(topic)
     @QtCore.Slot(str)
     def addTopic(self, topic: str):
         connection = QSqlDatabase.database(self.db_name)

@@ -7,7 +7,7 @@ import io.qt.textproperties 1.0
 Rectangle {
     id: mainRect
     color: 'black'
-
+    property string username: ""
     Row{
         id: btnRow
         ComboBox{
@@ -196,7 +196,7 @@ Rectangle {
                 }
                 Text{
                     id: recordIDField
-                    text: "N/A"
+                    text: ""
                     color: "white"
                 }
                 Label{
@@ -278,7 +278,7 @@ Rectangle {
                     id: textInput
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    text: "Enter your text here"
+                    placeholderText: "Enter your text here"
                     background: Rectangle {
                         implicitWidth: form.width -10 - descriptionLabel.width
                         color: "black"
@@ -326,7 +326,18 @@ Rectangle {
                     onClicked: {
                         endTimer()
                         entry.entryActive = false
-                        DbController.saveEntry()
+                        DbController.saveEntry(
+                            recordIDField.text === savedAt.text,
+                            recordIDField.text,
+                            mainRect.username,
+                            topicNameField.text,
+                            textInput.text,
+                            yearbox.currentValue,
+                            dateField.text,
+                            startField.text,
+                            endField.text,
+                            durationField.text
+                            )
                     }
                 }
             }
@@ -380,6 +391,12 @@ Rectangle {
         target: EntryModel
         function onEmptyTopic(value){
             removeTopicButton.enabled = value
+        }
+    }
+    Connections{
+        target: DbController
+        function onUsername(username){
+            mainRect.username = username
         }
     }
 }
