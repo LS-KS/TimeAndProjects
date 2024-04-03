@@ -21,7 +21,7 @@ Rectangle {
             }
             onCurrentValueChanged:{
                 DbController.setYear(currentValue)
-                console.log(currentValue)
+                //console.log(currentValue)
             }
         }
         Button{
@@ -29,7 +29,7 @@ Rectangle {
             width: topics.width/4
             enabled: true
             onClicked: {
-                console.log("Create Topic")
+                //console.log("Create Topic")
                 var component = Qt.createComponent("CreateTopicDialog.qml")
                 if (component.status === Component.Ready) {
                     var dialog = component.createObject(mainRect)
@@ -42,10 +42,11 @@ Rectangle {
 
         Button{
             text: "- Topic"
+            id: removeTopicButton
             enabled: false
             width:topics.width/4
             onClicked: {
-                DbController.removeTopic()
+                DbController.removeTopic(topics.topicID)
             }
         }
 
@@ -100,7 +101,7 @@ Rectangle {
                     topics.topicID = TopicModel.idOf(row)
                     topics.topic = TopicModel.topicOf(row)
                     topics.selectionActive = true
-                    console.log("selected topic: " + row + "(row)" + deleText.text )
+                    //console.log("selected topic: " + row + "(row)" + deleText.text )
                     DbController.updateEntryQuery(topics.topic)
                 }
             }
@@ -374,5 +375,11 @@ Rectangle {
     function endTimer(){
         timer.running = false
         endField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
+    }
+    Connections{
+        target: EntryModel
+        function onEmptyTopic(value){
+            removeTopicButton.enabled = value
+        }
     }
 }

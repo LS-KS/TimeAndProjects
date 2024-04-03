@@ -13,12 +13,13 @@ QML_IMPORT_MAJOR_VERSION = 1
 class DbController(QtCore.QObject):
     loginSuccess = QtCore.Signal(bool)
     logoutSuccess = QtCore.Signal()
+    databaseName = QtCore.Signal(str)
     topicQueryChanged = QtCore.Signal(str, str)  # query, db_name
     topicStandardQuery = QtCore.Signal(bool)  # emit if not filtered to any topic
     entryQueryChanged = QtCore.Signal(str, str)  # query, db_name
     entrySaved = QtCore.Signal(int, str)  # record is, timestamp
-
     newYear = QtCore.Signal(int)
+    topicDeleted = QtCore.Signal()
 
     def __init__(self):
         super().__init__(None)
@@ -45,6 +46,7 @@ class DbController(QtCore.QObject):
             return
         if connection.isOpen():
             self.db_name = db_name
+            self.databaseName.emit(self.db_name)
             self.topicQueryChanged.emit('SELECT * FROM topics', db_name)
             self.entryQueryChanged.emit('SELECT * FROM timecapturing', db_name)
 
@@ -91,7 +93,6 @@ class DbController(QtCore.QObject):
         creation_query += ")"
         query = QSqlQuery(creation_query)
         query.exec()
-
         list_query = f"CREATE TABLE IF NOT EXISTS topics ("
         list_query += "id INTEGER PRIMARY KEY,"
         list_query += "topic VARCHAR(100) )"
@@ -107,15 +108,26 @@ class DbController(QtCore.QObject):
         self.logoutSuccess.emit()
 
     @QtCore.Slot(str)
-    def updateEntryQuery(self, query: str):
-        if query == "":
+    def updateEntryQuery(self, topic: str):
+        if topic == "":
             self.entryQueryChanged.emit('SELECT * FROM timecapturing', self.db_name)
             self.topicQueryChanged.emit('SELECT * FROM topics', self.db_name)
             self.topicStandardQuery.emit(True)
         else:
-            r_query = f"SELECT * FROM timecapturing WHERE topic = '{query}'"
+            r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"
             print(f"updateEntryQuery: {r_query}")
             self.entryQueryChanged.emit(r_query, self.db_name)
+    @QtCore.Slot(int)
+    def removeTopic(self, id):
+        connection = QSqlDatabase().database(self.db_name)
+        query = QSqlQuery(connection)
+        query.prepare("DELETE FROM topics WHERE id = :id")
+        query.bindValue(":id", id)
+        if not query.exec():
+            print("Error while deleting topic:", query.lastError().text())
+        else:
+            print("Topic deleted successfully")
+            self.topicDeleted.emit()
 
     @QtCore.Slot(int)
     def setYear(self, year):
@@ -140,16 +152,15 @@ class DbController(QtCore.QObject):
         r_query = f"SELECT * FROM topics WHERE topic = '{topic}';"
         select_query = QSqlQuery(r_query, connection)
         if not select_query.exec():
-            print("Error executing select query:", query.lastError().text())
+            print("Error executing select query:", select_query.lastError().text())
         if select_query.next(): # return if topic in topics
             return
         # perform an insertion query
         r_query = f"INSERT INTO topics (topic) VALUES ('{topic}');"
         insert_query = QSqlQuery(r_query, connection)
-        """if not insert_query.exec():
-            print("Error executing insert query:", insert_query.lastError().text())
-        else:
-            print(f"Topic '{topic}' added to topics")"""
+        self.updateEntryQuery("")
+
+
     @QtCore.Slot()
     def discardEntry(self):
         pass

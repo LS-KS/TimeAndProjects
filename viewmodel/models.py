@@ -1,6 +1,8 @@
+from typing import Union
+
 from PySide6.QtCore import QModelIndex, QAbstractListModel
 from PySide6.QtQml import QmlElement, QmlSingleton
-from PySide6.QtSql import QSqlQueryModel, QSqlDatabase
+from PySide6.QtSql import QSqlQueryModel, QSqlDatabase, QSqlQuery
 from PySide6 import QtCore
 
 QML_IMPORT_NAME = "io.qt.textproperties"
@@ -13,6 +15,7 @@ class TopicModel(QSqlQueryModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._roleNames = {}
+        self.db_name = ""
 
     @QtCore.Slot(str, str)
     def setQuery(self, query: str, db: str):
@@ -20,6 +23,9 @@ class TopicModel(QSqlQueryModel):
         super().setQuery(query, connection)
         self.generateRoleNames()
 
+    @QtCore.Slot(str)
+    def setDatabaseName(self, db_name):
+        self.db_name = db_name
     @QtCore.Slot(int, result=int)
     def idOf(self, row):
         index = self.index(row, 0)
@@ -38,7 +44,7 @@ class TopicModel(QSqlQueryModel):
         self._roleNames = {}
         for i in range(super().record().count()):
             self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
-        print(f"TopicModel: generateRoleNames produced: {self._roleNames =}")
+        #print(f"TopicModel: generateRoleNames produced: {self._roleNames =}")
 
     def data(self, index:QModelIndex, role: int = ...):
         #print(f"TopicModel: data called with {index = }, {role = }")
@@ -51,24 +57,38 @@ class TopicModel(QSqlQueryModel):
             data = super().data(modelIndex, QtCore.Qt.DisplayRole)
         return data
 
+
 @QmlElement
 @QmlSingleton
 class EntryModel(QSqlQueryModel):
+    emptyTopic = QtCore.Signal(bool) # emits True if empty topic is selected
     def __init__(self, parent = None):
         super().__init__(parent)
         self._roleNames = {}
+        self.db_name = ""
 
     @QtCore.Slot(str, str)
     def setQuery(self, query: str, db: str):
         connection = QSqlDatabase().database(db)
         super().setQuery(query, connection)
         self.generateRoleNames()
+        select_query = QSqlQuery(query, connection)
+        if not select_query.next():
+            #print("Empty topic detected: ", query)
+            self.emptyTopic.emit(True)
+        else:
+            self.emptyTopic.emit(False)
+
+    @QtCore.Slot(str)
+    def setDatabaseName(self, db_name):
+        self.db_name = db_name
+
 
     def generateRoleNames(self):
         self._roleNames = {}
         for i in range(super().record().count()):
             self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
-        print(f"EntryModel: generateRoleNames produced: {self._roleNames =}")
+        #print(f"EntryModel: generateRoleNames produced: {self._roleNames =}")
 
     def data(self, index: QModelIndex, role: int = ...):
         #print(f"EntryModel: data called with {index = }, {role = }")

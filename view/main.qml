@@ -92,6 +92,10 @@ ApplicationWindow{
         function onLogoutSuccess(){
             stackView.pop()
         }
+        function onDatabaseName(db){
+            TopicModel.setDatabaseName(db)
+            EntryModel.setDatabaseName(db)
+        }
         function onTopicQueryChanged( query, db_name){
             TopicModel.setQuery(query, db_name)
         }
@@ -100,6 +104,9 @@ ApplicationWindow{
         }
         function onNewYear(year){
             YearModel.addYear(year)
+        }
+        function onTopicDeleted(){
+            DbController.updateEntryQuery("")
         }
     }
 }
