@@ -71,14 +71,15 @@ Rectangle {
         property int topicID : 0
         property string topic: ""
         property bool selectionActive: false
-        width: parent.width/3
+        property int maxwidth: 300
+        width: parent.width/3 >= maxwidth ? maxwidth : parent.width/3
         anchors.top: topicHeader.bottom
         anchors.left: parent.left
         anchors.bottom: parent.bottom
         model: TopicModel
         selectionBehavior: TableView.SelectRows
         columnWidthProvider: function(column){
-            return column === 0 ? 20 : 100
+            return column === 0 ? 20 : width - 20
         }
         delegate: Rectangle {
             id: deleRect
@@ -93,6 +94,7 @@ Rectangle {
                 text: model.display
                 color: column == 0? 'grey' : 'white'
                 verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WrapAnywhere
             }
             MouseArea{
                 anchors.fill: parent
@@ -122,7 +124,6 @@ Rectangle {
         syncView: entries
         clip: true
     }
-
     VerticalHeaderView {
         id: verticalHeader
         anchors.top: entries.top
@@ -153,6 +154,7 @@ Rectangle {
                 text: model.display
                 color: 'white'
                 verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
             }
 
         }
