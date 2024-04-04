@@ -67,6 +67,13 @@ class EntryModel(QSqlQueryModel):
         self._roleNames = {}
         self.db_name = ""
 
+    @QtCore.Slot(int, result=int)
+    def idOf(self, row):
+        index = self.index(row, 0)
+        data = int(self.data(index, 0))
+        # print(f"TopicModel::idOf {data = }")
+        return data
+
     @QtCore.Slot(str, str)
     def setQuery(self, query: str, db: str):
         connection = QSqlDatabase().database(db)

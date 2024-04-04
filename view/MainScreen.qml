@@ -133,6 +133,9 @@ Rectangle {
     }
     TableView{
         id: entries
+        property int selectedRow: 0
+        property int selectedId: 0
+        property bool selectedActive: false
         anchors.top: horizontalHeader.bottom
         anchors.right: parent.right
         anchors.left: verticalHeader.right
@@ -143,12 +146,13 @@ Rectangle {
         rowSpacing: 1
 
         delegate: Rectangle{
-            id: entrydDelegateRect
+            id: entryDelegateRect
+            property bool selected: row == entries.selectedRow
             implicitHeight: 30
             implicitWidth:  100
-            color: "black"
+            color: entryDelegateRect.selected && entries.selectedActive? "green" : "black"
             Text{
-                id: entrydDelegateText
+                id: entryDelegateText
                 anchors.fill: parent
                 anchors.margins: 5
                 text: model.display
@@ -156,7 +160,16 @@ Rectangle {
                 verticalAlignment: Text.AlignVCenter
                 wrapMode: Text.WordWrap
             }
-
+            MouseArea{
+                anchors.fill: parent
+                onClicked: {
+                    entries.selectedRow = row
+                    entries.selectedActive = true
+                    entries.selectedId = EntryModel.idOf(row)
+                    console.log("slected Row: " + entries.selectedRow + "; selectedActive: " + entries.selectedActive + "; selectedId: " + entries.selectedId + "; selected: " + entryDelegateRect.selected)
+                    console.assert(entryDelegateRect.selected && entries.selectionActive, "comparison failed: entryDelegateRect.selected: " + entryDelegateRect.selected +" entries.selectedActive: "  + entries.selectedActive)
+                }
+            }
         }
     }
 
