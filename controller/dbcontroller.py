@@ -7,7 +7,6 @@ from PySide6.QtSql import QSqlDatabase, QSqlQuery
 QML_IMPORT_NAME = "io.qt.textproperties"
 QML_IMPORT_MAJOR_VERSION = 1
 
-
 @QmlElement
 @QmlSingleton
 class DbController(QtCore.QObject):
@@ -116,7 +115,7 @@ class DbController(QtCore.QObject):
             self.topicStandardQuery.emit(True)
         else:
             r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"
-            print(f"updateEntryQuery: {r_query}")
+            # print(f"updateEntryQuery: {r_query}")
             self.entryQueryChanged.emit(r_query, self.db_name)
     @QtCore.Slot(int)
     def removeTopic(self, id):
@@ -127,7 +126,7 @@ class DbController(QtCore.QObject):
         if not query.exec():
             print("Error while deleting topic:", query.lastError().text())
         else:
-            print("Topic deleted successfully")
+            # print("Topic deleted successfully")
             self.topicDeleted.emit()
 
     @QtCore.Slot(int)
