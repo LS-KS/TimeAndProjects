@@ -136,7 +136,7 @@ Rectangle {
         anchors.top: horizontalHeader.bottom
         anchors.right: parent.right
         anchors.left: verticalHeader.right
-        height: parent.height*2/3
+        height: parent.height - form.heightsum
         model: EntryModel
         clip: true
         columnSpacing: 1
@@ -175,13 +175,14 @@ Rectangle {
             anchors.margins: 15
             spacing: 15
             id: form
+            property int heightsum: infoRow.implicitHeight + tagsRow.implicitHeight + descriptionRow.implicitHeight + entryBtnRow.implicitHeight + 5*spacing + 30
             Row{
                 id: infoRow
                 Layout.fillWidth: false
                 spacing: 15
                 Label{
                     text: "Topic:"
-                    width: 100
+                    width: 50
                 }
                 Text{
                     id: topicIdField
@@ -195,6 +196,7 @@ Rectangle {
                 }
                 Label{
                     text: "Record:"
+                    width: 50
                 }
                 Text{
                     id: recordIDField
@@ -203,6 +205,7 @@ Rectangle {
                 }
                 Label{
                     text: "Last saved:"
+                    width: 50
                 }
                 Text{
                     id: savedAt
@@ -217,7 +220,6 @@ Rectangle {
                 Label{
                     id: dateLabel
                     text: "Date:"
-                    width: 100
                 }
                 TextField{
                     id: dateField
@@ -227,7 +229,6 @@ Rectangle {
                 Label{
                     id: startLabel
                     text: "Start:"
-                    width: 100
                 }
                 TextField{
                     id: startField
@@ -238,7 +239,6 @@ Rectangle {
                 Label{
                     id: endLabel
                     text: "End:"
-                    width: 100
                 }
                 TextField{
                     id: endField
@@ -252,7 +252,6 @@ Rectangle {
                 Label{
                     id: durationLabel
                     text: "Duration"
-                    width: 100
                 }
                 Text{
                     property var defaultSize : 12
@@ -273,9 +272,7 @@ Rectangle {
                 Label{
                     id: descriptionLabel
                     text: "Description:"
-                    width: 100
                 }
-
                 TextArea{
                     id: textInput
                     Layout.fillWidth: true
