@@ -105,6 +105,9 @@ Rectangle {
                     topics.selectionActive = true
                     //console.log("selected topic: " + row + "(row)" + deleText.text )
                     DbController.updateEntryQuery(topics.topic)
+                    entries.selectedActive = false
+                    entries.selectedRow = 0
+                    entries.selectedId = 0
                 }
             }
             Connections{
@@ -166,8 +169,6 @@ Rectangle {
                     entries.selectedRow = row
                     entries.selectedActive = true
                     entries.selectedId = EntryModel.idOf(row)
-                    console.log("slected Row: " + entries.selectedRow + "; selectedActive: " + entries.selectedActive + "; selectedId: " + entries.selectedId + "; selected: " + entryDelegateRect.selected)
-                    console.assert(entryDelegateRect.selected && entries.selectionActive, "comparison failed: entryDelegateRect.selected: " + entryDelegateRect.selected +" entries.selectedActive: "  + entries.selectedActive)
                 }
             }
         }
@@ -248,6 +249,9 @@ Rectangle {
                     Layout.fillWidth: true
                     text: ""
                     color: "white"
+                    onTextChanged: {
+                        updateDuration()
+                    }
                 }
                 Label{
                     id: endLabel
@@ -308,6 +312,35 @@ Rectangle {
                     onClicked: startTimer()
                 }
                 Button{
+                    id: loadButton
+                    text: entries.selectedActive? "Load Entry " +  entries.selectedId : "First select entry"
+                    enabled: entries.selectedActive
+                    onClicked: {
+                        //console.log("about to call loadEntry with record ID: " + entries.selectedId)
+                        savedAt.text = ""
+                        EntryModel.loadEntry(entries.selectedId)
+                    }
+                    Connections{
+                        target: EntryModel
+                        function onEntryData(record_id, topic, username, description, year, date, start, end, duration){
+                            if( topic !== topics.topic){
+                                console.log("Topic does not match database topic. Should not be here!")
+                                console.log("topic= " + topic + " topic.topics = " + topics.topic)
+                                return;
+                            }
+                            console.log("loading entry "+ record_id);
+                            recordIDField.text = record_id;
+                            topicIdField.text = topics.topicID;
+                            topicNameField.text = topic;
+                            textInput.text = description;
+                            dateField.text = date;
+                            startField.text = start;
+                            endField.text = end;
+                            durationField.text = duration;
+                        }
+                    }
+                }
+                Button{
                     id: stopButton
                     text: "Stop"
                     enabled: timer.running
@@ -349,7 +382,8 @@ Rectangle {
                             startField.text,
                             endField.text,
                             durationField.text
-                            )
+                        )
+                        savedAt.text = new Date().toLocaleDateString()
                     }
                 }
             }
@@ -367,25 +401,31 @@ Rectangle {
     function updateDuration() {
         var startTimeString = startField.text;
         var startTimeParts = startTimeString.split(':');
+        //console.log(startTimeParts)
         var startTime = new Date();
-        startTime.setHours(  parseInt(startTimeParts[0]));
-        startTime.setMinutes(parseInt(startTimeParts[1]));
-        startTime.setSeconds(parseInt(startTimeParts[2]));
+        try{
+            startTime.setHours(  parseInt(startTimeParts[0]));
+            startTime.setMinutes(parseInt(startTimeParts[1]));
+            startTime.setSeconds(parseInt(startTimeParts[2]));
 
-        var currentTime = new Date();
+            var currentTime = new Date();
 
-        if (endField.text ===""){
-            var diff = new Date(currentTime - startTime);
-        } else{
-            var endTimeString = endField.text;
-            var endTimeParts = endTimeString.split(':');
-            var endTime = new Date();
-            endTime.setHours(  parseInt(endTimeParts[0]));
-            endTime.setMinutes(parseInt(endTimeParts[1]));
-            endTime.setSeconds(parseInt(endTimeParts[2]));
-            var diff = new Date(endTime - startTime);
+            if (endField.text ===""){
+                var diff = new Date(currentTime - startTime);
+            } else{
+                var endTimeString = endField.text;
+                var endTimeParts = endTimeString.split(':');
+                var endTime = new Date();
+                endTime.setHours(  parseInt(endTimeParts[0]));
+                endTime.setMinutes(parseInt(endTimeParts[1]));
+                endTime.setSeconds(parseInt(endTimeParts[2]));
+                var diff = new Date(endTime - startTime);
+            }
+            durationField.text = diff.toISOString().substr(11, 8);
         }
-        durationField.text = diff.toISOString().substr(11, 8);
+        catch (error){
+            return;
+        }
     }
     function startTimer(){
         startField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
@@ -396,8 +436,10 @@ Rectangle {
         entry.entryActive = true
     }
     function endTimer(){
-        timer.running = false
-        endField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
+        if(timer.running !== false){
+            timer.running = false
+            endField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
+        }
     }
     Connections{
         target: EntryModel

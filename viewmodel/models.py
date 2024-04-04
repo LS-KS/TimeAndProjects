@@ -62,6 +62,7 @@ class TopicModel(QSqlQueryModel):
 @QmlSingleton
 class EntryModel(QSqlQueryModel):
     emptyTopic = QtCore.Signal(bool) # emits True if empty topic is selected
+    entryData = QtCore.Signal(int, str, str, str, int, str, str, str, str) # record_id, topic, username, description, year, date, start, end, duration
     def __init__(self, parent = None):
         super().__init__(parent)
         self._roleNames = {}
@@ -73,6 +74,25 @@ class EntryModel(QSqlQueryModel):
         data = int(self.data(index, 0))
         # print(f"TopicModel::idOf {data = }")
         return data
+
+    @QtCore.Slot(int)
+    def loadEntry(self, record_id: int) -> None:
+        r_query = f"SELECT * FROM timecapturing WHERE id = {record_id}"
+        print(f"EntryModel::loadEntry: {r_query = }")
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        if query.next():
+            record_id = query.value(0)
+            username = query.value(1)
+            topic = query.value(2)
+            description = query.value(3)
+            year = query.value(4)
+            date = query.value(5)
+            start = query.value(6)
+            end = query.value(7)
+            duration = query.value(8)
+            self.entryData.emit(record_id, topic, username, description, year, date, start, end, duration)
+        else:
+            print("EntryModel::loadEntry: No record found")
 
     @QtCore.Slot(str, str)
     def setQuery(self, query: str, db: str):
