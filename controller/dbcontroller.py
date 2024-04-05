@@ -47,14 +47,14 @@ class DbController(QtCore.QObject):
         if connection.isOpen():
             self.db_name = db_name
             self.databaseName.emit(self.db_name)
-            self.topicQueryChanged.emit('SELECT * FROM topics', db_name)
-            self.entryQueryChanged.emit('SELECT * FROM timecapturing', db_name)
+            self.topicQueryChanged.emit('SELECT * FROM topics ORDER BY topic', db_name)
+            self.entryQueryChanged.emit('SELECT * FROM timecapturing ORDER BY year DESC, date', db_name)
             self.username.emit(user)
             # get a list of all years
             actual_year = QtCore.QDate.currentDate().year()
             self.newYear.emit(actual_year)
             query = QSqlQuery(db=connection)
-            query.prepare('SELECT year FROM timecapturing GROUP BY year')
+            query.prepare('SELECT year FROM timecapturing GROUP BY year Order BY year DESC, date')
             if not query.exec():
                 print("Error executing query:", query.lastError().text())
 
@@ -110,8 +110,8 @@ class DbController(QtCore.QObject):
     @QtCore.Slot(str)
     def updateEntryQuery(self, topic: str):
         if topic == "":
-            self.entryQueryChanged.emit('SELECT * FROM timecapturing', self.db_name)
-            self.topicQueryChanged.emit('SELECT * FROM topics', self.db_name)
+            self.entryQueryChanged.emit('SELECT * FROM timecapturing ORDER BY year DESC, date', self.db_name)
+            self.topicQueryChanged.emit('SELECT * FROM topics ORDER BY topic', self.db_name)
             self.topicStandardQuery.emit(True)
         else:
             r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"

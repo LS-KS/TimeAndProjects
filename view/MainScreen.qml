@@ -177,6 +177,7 @@ Rectangle {
     Rectangle{
         id: entry
         property bool entryActive: false
+        property int year: 0
         anchors.top: entries.bottom
         anchors.right: parent.right
         anchors.left: topics.right
@@ -271,7 +272,7 @@ Rectangle {
                     text: "Duration"
                 }
                 Text{
-                    property var defaultSize : 12
+                    property int defaultSize : 12
                     id: durationField
                     Layout.fillWidth: true
                     text: ""
@@ -337,6 +338,7 @@ Rectangle {
                             startField.text = start;
                             endField.text = end;
                             durationField.text = duration;
+                            entry.year = year
                         }
                     }
                 }
@@ -371,13 +373,14 @@ Rectangle {
                     onClicked: {
                         endTimer()
                         entry.entryActive = false
+
                         DbController.saveEntry(
                             recordIDField.text === savedAt.text,
                             recordIDField.text,
                             mainRect.username,
                             topicNameField.text,
                             textInput.text,
-                            yearbox.currentValue,
+                            entry.year,
                             dateField.text,
                             startField.text,
                             endField.text,
@@ -429,6 +432,7 @@ Rectangle {
     }
     function startTimer(){
         startField.text = new Date().toLocaleTimeString().replace(/\.\d+/, '')
+        entry.year = new Date().getFullYear()
         dateField.text = new Date().toLocaleDateString()
         topicIdField.text = topics.topicID
         topicNameField.text = topics.topic
