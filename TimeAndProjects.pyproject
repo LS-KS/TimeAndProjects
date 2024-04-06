@@ -10,6 +10,7 @@
         "view/LoginScreen.qml",
         "view/MainScreen.qml",
         "view/main.qml",
+        "view/MetaDataDialog.qml",
         "viewmodel/models.py"
     ]
 }

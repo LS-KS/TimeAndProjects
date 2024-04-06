@@ -15,8 +15,18 @@ ApplicationWindow{
         enabled: stackView.currentItem === mainScreen
         Menu {
             title: qsTr("&File")
-            Action { text: qsTr("&New...") }
-            Action { text: qsTr("&Open...") }
+            Action {
+                text: qsTr("&Preferences...")
+                onTriggered: {
+                    var component = Qt.createComponent("MetaDataDialog.qml")
+                    if (component.status === Component.Ready) {
+                        var dialog = component.createObject(root)
+                        dialog.open()
+                    }else{
+                        console.log("Error creating component" + component.errorString())
+                    }
+                }
+            }
             MenuSeparator { }
             Action {
                 text: qsTr("&Show &All &Entries")

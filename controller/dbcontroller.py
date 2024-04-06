@@ -20,6 +20,7 @@ class DbController(QtCore.QObject):
     newYear = QtCore.Signal(int)
     topicDeleted = QtCore.Signal()
     username = QtCore.Signal(str)
+    metadata = QtCore.Signal(str, str, str, str, str, str, str, str, str, str, str, str, str, str, str, str,)
 
     def __init__(self):
         super().__init__(None)
@@ -28,6 +29,19 @@ class DbController(QtCore.QObject):
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
 
+    @QtCore.Slot(str)
+    def addTopic(self, topic: str):
+        connection = QSqlDatabase.database(self.db_name)
+        r_query = f"SELECT * FROM topics WHERE topic = '{topic}';"
+        select_query = QSqlQuery(r_query, connection)
+        if not select_query.exec():
+            print("Error executing select query:", select_query.lastError().text())
+        if select_query.next(): # return if topic in topics
+            return
+        # perform an insertion query
+        r_query = f"INSERT INTO topics (topic) VALUES ('{topic}');"
+        insert_query = QSqlQuery(r_query, connection)
+        self.updateEntryQuery("")
     @QtCore.Slot(str, str, str)
     def connect(self, db_name, user, password):
         # catch empty inputs
@@ -98,8 +112,52 @@ class DbController(QtCore.QObject):
         list_query += "topic VARCHAR(100) )"
         query = QSqlQuery(list_query)
         query.exec()
+        self._create_metatables(db)
         db.close()
         return True
+
+    def _create_metatables(self, connection: QSqlDatabase) -> None:
+        meta_query = """CREATE TABLE  IF NOT EXISTS `meta` (
+                            'company_name' TEXT,
+                            'company_street' TEXT,
+                            'company_city' TEXT,
+                            'company_zip' TEXT,
+                            'company_email' TEXT,
+                            'company_phone' TEXT,
+                            'employee_name' TEXT,
+                            'employee_street' TEXT,
+                            'employee_city' TEXT,
+                            'employee_zip' TEXT,
+                            'employee_email' TEXT,
+                            'employee_phone' TEXT,
+                            'employee_id' TEXT,
+                            'employee_holiday_entitlement' TEXT,
+                            'employee_weekly_hours' TEXT,
+                            'employee_daily_hours' TEXT
+                            );"""
+        holiday_query = """CREATE TABLE  IF NOT EXISTS `holidays` (
+                            'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                            'day' TEXT,
+                            'hours' TEXT
+                            );"""
+        public_holiday_query = """CREATE TABLE  IF NOT EXISTS `public_holidays` (
+                                    'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    'day' TEXT,
+                                    'description' TEXT,
+                                    'hours' TEXT
+                                    );"""
+        sick_query = """CREATE TABLE  IF NOT EXISTS `sick_days` (
+                        'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                        'day' TEXT,
+                        'hours' TEXT
+                        );"""
+        for querytext in [meta_query, holiday_query, public_holiday_query, sick_query]:
+            query = QSqlQuery(querytext, connection)
+            if not query.exec():
+                print(f"Error while creating metatable {querytext}:", query.lastError().text())
+    @QtCore.Slot()
+    def discardEntry(self):
+        pass
 
     @QtCore.Slot()
     def disconnect(self):
@@ -107,16 +165,50 @@ class DbController(QtCore.QObject):
         self.db_name = ""
         self.logoutSuccess.emit()
 
-    @QtCore.Slot(str)
-    def updateEntryQuery(self, topic: str):
-        if topic == "":
-            self.entryQueryChanged.emit('SELECT * FROM timecapturing ORDER BY year DESC, date', self.db_name)
-            self.topicQueryChanged.emit('SELECT * FROM topics ORDER BY topic', self.db_name)
-            self.topicStandardQuery.emit(True)
-        else:
-            r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"
-            # print(f"updateEntryQuery: {r_query}")
-            self.entryQueryChanged.emit(r_query, self.db_name)
+    @QtCore.Slot()
+    def load_metadata(self) -> None:
+        r_query = "SELECT * FROM meta"
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        if not query.exec():
+            print("Error executing query:", query.lastError().text())
+            return
+        while query.next():
+            company_name = query.value(0)
+            companyStreet = query.value(1)
+            companyCity = query.value(2)
+            companyZip = query.value(3)
+            companyEmail = query.value(4)
+            companyPhone = query.value(5)
+
+            employeeName = query.value(6)
+            employeeStreet = query.value(7)
+            employeeCity = query.value(8)
+            employeeZip = query.value(9)
+            employeeEmail = query.value(10)
+            employeePhone = query.value(11)
+            employeeId = query.value(12)
+            holidays = query.value(13)
+            weeklyHours = query.value(14)
+            dailyHours = query.value(15)
+            self.metadata.emit(
+                company_name,
+                companyStreet,
+                companyCity,
+                companyZip,
+                companyEmail,
+                companyPhone,
+                employeeName,
+                employeeStreet,
+                employeeCity,
+                employeeZip,
+                employeeEmail,
+                employeePhone,
+                employeeId,
+                holidays,
+                weeklyHours,
+                dailyHours,
+            )
+
     @QtCore.Slot(int)
     def removeTopic(self, id):
         connection = QSqlDatabase().database(self.db_name)
@@ -160,21 +252,31 @@ class DbController(QtCore.QObject):
             else:
                 self.entrySaved.emit(record, QtCore.QDateTime.currentDateTime().toString())
                 self.updateEntryQuery(topic)
+
+    @QtCore.Slot(str, str, str, str, str, str, str, str, str, str, str, str, str, str, str, str)
+    def save_metadata(self, company_name, company_street, company_zip, company_city, company_email, company_phone, employee_name, employee_street, employee_zip, employee_city, employee_id, employee_email, employee_phone, employee_holiday_entitlement, employee_weekly_hours, employee_daily_hours):
+        del_query = "DELETE FROM meta"
+        r_query = f"""INSERT INTO meta (company_name, company_street, company_city, company_zip, company_email, company_phone, employee_name, employee_street, employee_city, employee_zip, employee_email, employee_phone, employee_id, employee_holiday_entitlement, employee_weekly_hours, employee_daily_hours)
+                   VALUES ('{company_name}', '{company_street}', '{company_city}', '{company_zip}', '{company_email}', '{company_phone}', '{employee_name}', '{employee_street}', '{employee_city}', '{employee_zip}', '{employee_email}', '{employee_phone}', '{employee_id}', '{employee_holiday_entitlement}', '{employee_weekly_hours}', '{employee_daily_hours}');"""
+        connection = QSqlDatabase().database(self.db_name)
+        query = QSqlQuery(connection)
+        query.prepare(del_query)
+        if not query.exec():
+            print("Error while deleting metadata:", query.lastError().text())
+        query.prepare(r_query)
+        if not query.exec():
+            print("Error while saving metadata:", query.lastError().text())
+        else:
+            print("Metadata saved successfully")
+
     @QtCore.Slot(str)
-    def addTopic(self, topic: str):
-        connection = QSqlDatabase.database(self.db_name)
-        r_query = f"SELECT * FROM topics WHERE topic = '{topic}';"
-        select_query = QSqlQuery(r_query, connection)
-        if not select_query.exec():
-            print("Error executing select query:", select_query.lastError().text())
-        if select_query.next(): # return if topic in topics
-            return
-        # perform an insertion query
-        r_query = f"INSERT INTO topics (topic) VALUES ('{topic}');"
-        insert_query = QSqlQuery(r_query, connection)
-        self.updateEntryQuery("")
+    def updateEntryQuery(self, topic: str):
+        if topic == "":
+            self.entryQueryChanged.emit('SELECT * FROM timecapturing ORDER BY year DESC, date', self.db_name)
+            self.topicQueryChanged.emit('SELECT * FROM topics ORDER BY topic', self.db_name)
+            self.topicStandardQuery.emit(True)
+        else:
+            r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"
+            # print(f"updateEntryQuery: {r_query}")
+            self.entryQueryChanged.emit(r_query, self.db_name)
 
-
-    @QtCore.Slot()
-    def discardEntry(self):
-        pass
