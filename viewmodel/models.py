@@ -1,5 +1,4 @@
 from typing import Union
-
 from PySide6.QtCore import QModelIndex, QAbstractListModel
 from PySide6.QtQml import QmlElement, QmlSingleton
 from PySide6.QtSql import QSqlQueryModel, QSqlDatabase, QSqlQuery
@@ -56,7 +55,6 @@ class TopicModel(QSqlQueryModel):
             modelIndex = self.index(index.row(), columnIdx)
             data = super().data(modelIndex, QtCore.Qt.DisplayRole)
         return data
-
 
 @QmlElement
 @QmlSingleton
@@ -157,3 +155,126 @@ class YearModel(QAbstractListModel):
         self._years.sort(reverse=True)
         self.endInsertRows()
         self.dataChanged.emit(self.index(0), self.index(len(self._years)))
+
+@QmlElement
+@QmlSingleton
+class HolidayModel(QSqlQueryModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._roleNames = {}
+        self.db_name = ""
+
+    @QtCore.Slot(str, str)
+    def setQuery(self, query: str, db: str):
+        connection = QSqlDatabase().database(db)
+        super().setQuery(query, connection)
+        self.generateRoleNames()
+
+    @QtCore.Slot(str)
+    def setDatabaseName(self, db_name):
+        self.db_name = db_name
+    @QtCore.Slot(int, result=int)
+    def idOf(self, row):
+        index = self.index(row, 0)
+        data = int(self.data(index, 0))
+        #print(f"HolidayModel::idOf {data = }")
+        return data
+
+    def generateRoleNames(self):
+        self._roleNames = {}
+        for i in range(super().record().count()):
+            self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
+        #print(f"HolidayModel: generateRoleNames produced: {self._roleNames =}")
+
+    def data(self, index:QModelIndex, role: int = ...):
+        #print(f"HolidayModel: data called with {index = }, {role = }")
+        data = None
+        if role < QtCore.Qt.UserRole:
+            data = super().data(index, role)
+        else:
+            columnIdx = role - QtCore.Qt.UserRole - 1
+            modelIndex = self.index(index.row(), columnIdx)
+            data = super().data(modelIndex, QtCore.Qt.DisplayRole)
+        return data
+@QmlElement
+@QmlSingleton
+class PublicHolidayModel(QSqlQueryModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._roleNames = {}
+        self.db_name = ""
+
+    @QtCore.Slot(str, str)
+    def setQuery(self, query: str, db: str):
+        #print(f"PublicHolidayModel::setQuery called with {query = }, {db = }")
+        connection = QSqlDatabase().database(db)
+        super().setQuery(query, connection)
+        self.generateRoleNames()
+
+    @QtCore.Slot(str)
+    def setDatabaseName(self, db_name):
+        self.db_name = db_name
+    @QtCore.Slot(int, result=int)
+    def idOf(self, row):
+        index = self.index(row, 0)
+        data = int(self.data(index, 0))
+        #print(f"PublicHolidayModel::idOf {data = }")
+        return data
+
+    def generateRoleNames(self):
+        self._roleNames = {}
+        for i in range(super().record().count()):
+            self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
+        #print(f"PublicHolidayModel: generateRoleNames produced: {self._roleNames =}")
+
+    def data(self, index:QModelIndex, role: int = ...):
+        #print(f"PublicHolidayModel: data called with {index = }, {role = }")
+        data = None
+        if role < QtCore.Qt.UserRole:
+            data = super().data(index, role)
+        else:
+            columnIdx = role - QtCore.Qt.UserRole - 1
+            modelIndex = self.index(index.row(), columnIdx)
+            data = super().data(modelIndex, QtCore.Qt.DisplayRole)
+        return data
+
+@QmlElement
+@QmlSingleton
+class SickdayModel(QSqlQueryModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._roleNames = {}
+        self.db_name = ""
+
+    @QtCore.Slot(str, str)
+    def setQuery(self, query: str, db: str):
+        #print(f"SickdayModel::setQuery called with {query = }, {db = }")
+        connection = QSqlDatabase().database(db)
+        super().setQuery(query, connection)
+        self.generateRoleNames()
+    @QtCore.Slot(str)
+    def setDatabaseName(self, db_name):
+        self.db_name = db_name
+    @QtCore.Slot(int, result=int)
+    def idOf(self, row):
+        index = self.index(row, 0)
+        data = int(self.data(index, 0))
+        #print(f"SickdayModel::idOf {data = }")
+        return data
+
+    def generateRoleNames(self):
+        self._roleNames = {}
+        for i in range(super().record().count()):
+            self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
+        #print(f"SickdayModel: generateRoleNames produced: {self._roleNames =}")
+
+    def data(self, index:QModelIndex, role: int = ...):
+        #print(f"SickdayModel: data called with {index = }, {role = }")
+        data = None
+        if role < QtCore.Qt.UserRole:
+            data = super().data(index, role)
+        else:
+            columnIdx = role - QtCore.Qt.UserRole - 1
+            modelIndex = self.index(index.row(), columnIdx)
+            data = super().data(modelIndex, QtCore.Qt.DisplayRole)
+        return data

@@ -12,7 +12,7 @@ ApplicationWindow{
     id: root
 
     menuBar: MenuBar {
-        enabled: stackView.currentItem === mainScreen
+        enabled: stackView.currentItem != loginScreen
         Menu {
             title: qsTr("&File")
             Action {
@@ -34,14 +34,36 @@ ApplicationWindow{
                     DbController.updateEntryQuery("")
                 }
             }
+            Action{
+                text: qsTr("&Goto &holidays")
+                enabled: stackView.currentItem == mainScreen
+                onTriggered: {
+                    stackView.push(holidayScreen)
+                }
+            }
+            Action{
+                text: qsTr("&Goto &public Holidays")
+                enabled: stackView.currentItem == mainScreen
+                onTriggered: {
+                    stackView.push(pholidayScreen)
+                }
+            }
+            Action{
+                text: qsTr("&Goto &sickdays")
+                enabled: stackView.currentItem == mainScreen
+                onTriggered: {
+                    stackView.push(sickdayScreen)
+                }
+            }
+            Action{
+                text: qsTr("&Goto &Mainscreen ...")
+                enabled: stackView.currentItem != mainScreen
+                onTriggered:{
+                    stackView.pop(mainScreen)
+                }
+            }
             MenuSeparator { }
             Action { text: qsTr("&Quit") }
-        }
-        Menu {
-            title: qsTr("&Edit")
-            Action { text: qsTr("Cu&t") }
-            Action { text: qsTr("&Copy") }
-            Action { text: qsTr("&Paste") }
         }
         Menu {
             title: qsTr("&Help")
@@ -87,6 +109,31 @@ ApplicationWindow{
             id: mainScreen
         }
 
+        HolidayScreen{
+            visible:false
+            id: holidayScreen
+        }
+
+        PublicHolidayScreen{
+            visible:false
+            id: pholidayScreen
+        }
+
+        SickdayScreen{
+            visible:false
+            id: sickdayScreen
+        }
+        onCurrentItemChanged: {
+            if(currentItem === holidayScreen){
+                DbController.getUsedHolidays();
+            }
+            else if(currentItem === pholidayScreen){
+                DbController.getPublicHolidayCount()
+            }
+            else if(currentItem === sickdayScreen){
+                DbController.getSickDayCount()
+            }
+        }
     }
     Connections{
         target: DbController
@@ -100,7 +147,7 @@ ApplicationWindow{
             }
         }
         function onLogoutSuccess(){
-            stackView.pop()
+            stackView.pop(loginScreen)
         }
         function onDatabaseName(db){
             TopicModel.setDatabaseName(db)
@@ -111,6 +158,18 @@ ApplicationWindow{
         }
         function onEntryQueryChanged( query, db_name){
             EntryModel.setQuery(query, db_name)
+        }
+        function onHolidayQueryChanged(query, db_name){
+            console.log("query of HolidayModel changed" + query +", " + db_name);
+            HolidayModel.setQuery(query, db_name);
+        }
+        function onPublicHolidayQueryChanged(query, db_name){
+            console.log("query of PublicHolidayModel changed" + query +", " + db_name);
+            PublicHolidayModel.setQuery(query, db_name);
+        }
+        function onSickdayQueryChanged(query, db_name){
+            console.log("query of SickdayModel changed" + query +", " + db_name);
+            SickdayModel.setQuery(query, db_name);
         }
         function onNewYear(year){
             YearModel.addYear(year)

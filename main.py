@@ -4,7 +4,7 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 from controller.dbcontroller import DbController
-from viewmodel.models import TopicModel
+from viewmodel.models import TopicModel, EntryModel, HolidayModel, PublicHolidayModel, SickdayModel
 
 if __name__ == "__main__":
     app = QGuiApplication(sys.argv)

@@ -16,16 +16,26 @@ class DbController(QtCore.QObject):
     topicQueryChanged = QtCore.Signal(str, str)  # query, db_name
     topicStandardQuery = QtCore.Signal(bool)  # emit if not filtered to any topic
     entryQueryChanged = QtCore.Signal(str, str)  # query, db_name
+    holidayQueryChanged = QtCore.Signal(str, str)  # query, db_name
+    publicHolidayQueryChanged = QtCore.Signal(str, str)  # query, db_name
+    sickdayQueryChanged = QtCore.Signal(str, str)  # query, db_name
     entrySaved = QtCore.Signal(int, str)  # record is, timestamp
     newYear = QtCore.Signal(int)
     topicDeleted = QtCore.Signal()
     username = QtCore.Signal(str)
     metadata = QtCore.Signal(str, str, str, str, str, str, str, str, str, str, str, str, str, str, str, str,)
+    usedHolidays = QtCore.Signal(float)
+    holidayEntitlement = QtCore.Signal(float)
+    publicHolidayCount = QtCore.Signal(float)
+    sickDayCount = QtCore.Signal(float)
 
     def __init__(self):
         super().__init__(None)
+        self.holidays = 0
         self.db_name = ""
         self.year = QtCore.QDate.currentDate().year()
+        self.weekly_hours : float = 0
+        self.daily_hours : float = 0
         self.db_columns = ['user', 'topic', 'description', 'year', 'date', 'start', 'end', 'duration']
         self.db_types = ['TEXT', 'TEXT', 'TEXT', 'INTEGER', 'TEXT', 'TEXT', 'TEXT', 'TEXT']
 
@@ -61,8 +71,7 @@ class DbController(QtCore.QObject):
         if connection.isOpen():
             self.db_name = db_name
             self.databaseName.emit(self.db_name)
-            self.topicQueryChanged.emit('SELECT * FROM topics ORDER BY topic', db_name)
-            self.entryQueryChanged.emit('SELECT * FROM timecapturing ORDER BY year DESC, date', db_name)
+            self.updateEntryQuery("")
             self.username.emit(user)
             # get a list of all years
             actual_year = QtCore.QDate.currentDate().year()
@@ -81,6 +90,7 @@ class DbController(QtCore.QObject):
             self.loginSuccess.emit(True)
         else:
             self.loginSuccess.emit(False)
+        self.load_metadata()
 
     @QtCore.Slot(str, result=bool)
     def check_database_name(self, db_name) -> bool:
@@ -137,17 +147,20 @@ class DbController(QtCore.QObject):
                             );"""
         holiday_query = """CREATE TABLE  IF NOT EXISTS `holidays` (
                             'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                            'year' INTEGER,
                             'day' TEXT,
                             'hours' TEXT
                             );"""
         public_holiday_query = """CREATE TABLE  IF NOT EXISTS `public_holidays` (
                                     'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    'year' INTEGER,
                                     'day' TEXT,
                                     'description' TEXT,
                                     'hours' TEXT
                                     );"""
-        sick_query = """CREATE TABLE  IF NOT EXISTS `sick_days` (
+        sick_query = """CREATE TABLE  IF NOT EXISTS `sickdays` (
                         'id' INTEGER PRIMARY KEY AUTOINCREMENT,
+                        'year' INTEGER,
                         'day' TEXT,
                         'hours' TEXT
                         );"""
@@ -208,6 +221,9 @@ class DbController(QtCore.QObject):
                 weeklyHours,
                 dailyHours,
             )
+            self.holidays = float(holidays)
+            self.weekly_hours = float(weeklyHours)
+            self.daily_hours = float(dailyHours)
 
     @QtCore.Slot(int)
     def removeTopic(self, id):
@@ -230,6 +246,9 @@ class DbController(QtCore.QObject):
         self.topicQueryChanged.emit(
             f"SELECT  DISTINCT  topics.id, topics.topic  FROM topics INNER JOIN timecapturing ON topics.topic = timecapturing.topic WHERE timecapturing.year = {self.year} GROUP BY topics.topic",
             self.db_name)
+        self.holidayQueryChanged.emit(f"SELECT * FROM holidays WHERE year = {self.year}", self.db_name)
+        self.publicHolidayQueryChanged.emit(f"SELECT * FROM public_holidays WHERE year = {self.year}", self.db_name)
+        self.sickdayQueryChanged.emit(f"SELECT * FROM sickdays WHERE year = {self.year}", self.db_name)
 
     @QtCore.Slot(bool, int, str, str, str, str, str, str, str, str)
     def saveEntry(self, new_record:bool, record:int, user: str, topic: str, description: str, year: str, date: str, start: str, end: str, duration: str):
@@ -274,9 +293,60 @@ class DbController(QtCore.QObject):
         if topic == "":
             self.entryQueryChanged.emit('SELECT * FROM timecapturing ORDER BY year DESC, date', self.db_name)
             self.topicQueryChanged.emit('SELECT * FROM topics ORDER BY topic', self.db_name)
+            self.holidayQueryChanged.emit('SELECT * FROM holidays ORDER BY day', self.db_name)
+            self.publicHolidayQueryChanged.emit('SELECT * FROM public_holidays ORDER BY day', self.db_name)
+            self.sickdayQueryChanged.emit('SELECT * FROM sickdays ORDER BY day', self.db_name)
             self.topicStandardQuery.emit(True)
         else:
             r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"
             # print(f"updateEntryQuery: {r_query}")
             self.entryQueryChanged.emit(r_query, self.db_name)
 
+    @QtCore.Slot()
+    def getUsedHolidays(self):
+        r_query = f"SELECT hours FROM holidays WHERE year = '{self.year}'"
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        hours = []
+        if not query.exec():
+            print("Error executing query:", query.lastError().text())
+            return
+        while query.next():
+            hours.append(query.value(0))
+        hour_sum = 0
+        for time_string in hours:
+            if len(time_string.split(":")) == 3:
+                hour_sum += int(time_string.split(":")[0]) + int(time_string.split(":")[1])/60 + int(time_string.split(":")[2])/3600
+        self.usedHolidays.emit(hour_sum/self.daily_hours)
+        self.holidayEntitlement.emit(self.holidays)
+
+    @QtCore.Slot()
+    def getPublicHolidayCount(self):
+        r_query = f"SELECT hours FROM public_holidays WHERE year = '{self.year}'"
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        if not query.exec():
+            print("Error executing query:", query.lastError().text())
+            return
+        hours = []
+        while query.next():
+            hours.append(query.value(0))
+        hour_sum = 0
+        for time_string in hours:
+            if len(time_string.split(":")) == 3:
+                hour_sum += int(time_string.split(":")[0]) + int(time_string.split(":")[1])/60 + int(time_string.split(":")[2])/3600
+        self.publicHolidayCount.emit(hour_sum/self.daily_hours)
+
+    @QtCore.Slot()
+    def getSickDayCount(self):
+        r_query = f"SELECT hours FROM sickdays WHERE year = '{self.year}'"
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        if not query.exec():
+            print("Error executing query:", query.lastError().text())
+            return
+        hours = []
+        while query.next():
+            hours.append(query.value(0))
+        hour_sum = 0
+        for time_string in hours:
+            if len(time_string.split(":")) == 3:
+                hour_sum += int(time_string.split(":")[0]) + int(time_string.split(":")[1])/60 + int(time_string.split(":")[2])/3600
+        self.sickDayCount.emit(hour_sum/self.daily_hours)
