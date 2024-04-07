@@ -49,13 +49,13 @@ ScrollView {
         id: holidayView
         model: HolidayModel
         implicitWidth: parent.implicitWidth
-        implicitHeight: parent.height
+        implicitHeight: parent.height*2/3 - holidayEdit.height
         anchors.top: holiRect.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         topMargin: holidayHorizontalHeader.height
         leftMargin: holidayVerticalHeader.width
-
+        boundsBehavior: Flickable.StopAtBounds
         clip: true
         columnSpacing: 1
         rowSpacing: 1
@@ -74,6 +74,86 @@ ScrollView {
                 color: column === 0? 'grey' : 'white'
                 verticalAlignment: Text.AlignVCenter
                 wrapMode: Text.WrapAnywhere
+            }
+            MouseArea{
+                anchors.fill: parent
+                onClicked: {
+                    holidayView.selectedRow = row
+                    holidayView.selectedId = HolidayModel.idOf(row)
+                    holidayView.selectionActive = true
+                    DbController.selectHolidayEntry(holidayView.selectedId)
+                }
+            }
+        }
+
+        Connections{
+            target: DbController
+            function onHolidayEntry(id, day, hours, year){
+                console.log("id = "+id + "day: "+ day + "hours: " + hours + "year: "+ year)
+                idField.text = id;
+                dayField.text = day;
+                hourField.text = hours;
+                yearField.text = year;
+            }
+        }
+    }
+    Rectangle{
+        id: holidayEdit
+        anchors.top: holidayView.bottom
+        width: parent.width
+        color: "black"
+        ColumnLayout{
+            anchors.fill:parent
+            spacing: 10
+            Row{
+                spacing: 10
+                Layout.fillWidth: true
+                Label{
+                    text: "Id: "
+                    color: "white"
+                }
+                Text{
+                    id: idField
+                    text: ""
+                    color: "white"
+                }
+                Label{
+                    text: "Day: "
+                    color: "white"
+                }
+                TextField{
+                    id: dayField
+                    text: ""
+                    color: "white"
+                }
+                Label{
+                    text: "Hours: "
+                    color: "white"
+                }
+                TextField{
+                    id: hourField
+                    text:""
+                    color: "white"
+                }
+                Label{
+                    text: "Year"
+                    color: "white"
+                }
+                TextField{
+                    id: yearField
+                    text: ""
+                    color: "white"
+                }
+            }
+            Row{
+                Button{
+                    text: "Save"
+                    onClicked: console.log("not implemented")
+                }
+                Button{
+                    text: "Delete"
+                    onClicked: console.log("not implemented")
+                }
             }
         }
     }
