@@ -168,6 +168,20 @@ ScrollView {
                         saveButton.enabled = true
                     }
                 }
+                Button{
+                    text:"Today"
+                    enabled: idField.text !== ""
+                    onClicked: {
+                        var date = new Date();
+                        var year = date.getFullYear();
+                        var month = (date.getMonth() + 1).toString().padStart(2, '0');
+                        var day = date.getDate().toString().padStart(2, '0');
+                        var hours_floatstring = DbController.getDailyHours();
+                        dayField.text = year+"-"+month +"-" + day;
+                        yearField.text = year;
+                        hourField.text = hours_floatstring;
+                    }
+                }
             }
             Text {
                 id: result

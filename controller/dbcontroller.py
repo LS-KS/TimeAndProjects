@@ -189,7 +189,15 @@ class DbController(QtCore.QObject):
         QSqlDatabase.removeDatabase(self.db_name)
         self.db_name = ""
         self.logoutSuccess.emit()
-
+    @QtCore.Slot(result = str)
+    def getDailyHours(self):
+        hours = self.daily_hours//1
+        minutes = (self.daily_hours - hours) * 60
+        seconds = (minutes - int(minutes)) * 60
+        hours: str = str(hours if hours > 9 else "0" + str(int(hours)))
+        minutes: str = str(int(minutes) if minutes > 9 else "0" + str(int(minutes)))
+        seconds: str = str(int(seconds) if seconds > 9 else "0" + str(int(seconds)))
+        return str( hours + ":" + minutes + ":" + seconds)
     @QtCore.Slot()
     def getUsedHolidays(self):
         r_query = f"SELECT hours FROM holidays WHERE year = '{self.year}'"
