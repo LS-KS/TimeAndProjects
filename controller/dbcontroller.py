@@ -29,6 +29,10 @@ class DbController(QtCore.QObject):
     publicHolidayCount = QtCore.Signal(float)
     sickDayCount = QtCore.Signal(float)
     holidayEntry = QtCore.Signal(int, str, str, str)
+    holidayEntrySaved = QtCore.Signal(bool)
+    holidayEntryDeleted = QtCore.Signal(bool)
+    holidayEntryDuplicate = QtCore.Signal(int)
+    holidayEntryNew = QtCore.Signal(int)
     publicHolidayEntry = QtCore.Signal(int, str, str, str, str)
     sickdayEntry = QtCore.Signal(int, str, str, str)
 
@@ -129,6 +133,11 @@ class DbController(QtCore.QObject):
         db.close()
         return True
 
+    @QtCore.Slot(int)
+    def deleteHolidayEntry(self, id):
+        del_query = f"DELETE FROM holidays WHERE id = {id}"
+        query = QSqlQuery(del_query, QSqlDatabase().database(self.db_name))
+        self.holidayEntryDeleted.emit(query.exec())
     def _create_metatables(self, connection: QSqlDatabase) -> None:
         meta_query = """CREATE TABLE  IF NOT EXISTS `meta` (
                             'company_name' TEXT,
@@ -324,6 +333,42 @@ class DbController(QtCore.QObject):
                 self.entrySaved.emit(record, QtCore.QDateTime.currentDateTime().toString())
                 self.updateEntryQuery(topic)
 
+    @QtCore.Slot(int, str, str, str)
+    def saveHolidayEntry(self, id, day, hours, year):
+        # check if there is an entry with the same day
+        r_query = f"SELECT * FROM holidays WHERE day = '{day}' AND year = '{year}'"
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        if not query.exec():
+            print("Error executing query:", query.lastError().text())
+            return
+        if query.next():
+            existing_id = int(query.value(0))
+            if id ==-1:
+                self.holidayEntryDuplicate.emit(existing_id)
+                return
+            elif id >= 0 and existing_id != id:
+                self.holidayEntryDuplicate.emit(existing_id)
+                return
+        if id >=0:
+            update_query = f"UPDATE holidays SET day = '{day}', hours = '{hours}', year = '{year}' WHERE id = {id}"
+            query = QSqlQuery(update_query, QSqlDatabase().database(self.db_name))
+            self.holidayEntrySaved.emit(query.exec())
+        elif id == -1:
+            insert_query = f"INSERT INTO holidays (day, hours, year) VALUES ('{day}', '{hours}', '{year}')"
+            query = QSqlQuery(QSqlDatabase().database(self.db_name))
+            if not query.exec(insert_query):
+                print("Error executing query:", query.lastError().text())
+            else:
+                self.holidayEntrySaved.emit(True)
+
+            r_query = f"SELECT id FROM holidays WHERE day = '{day}' AND year = '{year}'"
+            query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+            if not query.exec():
+                print("Error executing query:", query.lastError().text())
+                return
+            if query.next():
+                id = int(query.value(0))
+                self.holidayEntryNew.emit(id)
     @QtCore.Slot(str, str, str, str, str, str, str, str, str, str, str, str, str, str, str, str)
     def save_metadata(self, company_name, company_street, company_zip, company_city, company_email, company_phone, employee_name, employee_street, employee_zip, employee_city, employee_id, employee_email, employee_phone, employee_holiday_entitlement, employee_weekly_hours, employee_daily_hours):
         del_query = "DELETE FROM meta"
@@ -392,4 +437,9 @@ class DbController(QtCore.QObject):
             r_query = f"SELECT * FROM timecapturing WHERE topic = '{topic}'"
             # print(f"updateEntryQuery: {r_query}")
             self.entryQueryChanged.emit(r_query, self.db_name)
+
+    @QtCore.Slot()
+    def updateHolidayQuery(self):
+        self.holidayQueryChanged.emit(f"SELECT * FROM holidays WHERE year = {self.year}", self.db_name)
+
 

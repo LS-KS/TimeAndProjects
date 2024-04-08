@@ -169,7 +169,6 @@ class HolidayModel(QSqlQueryModel):
         connection = QSqlDatabase().database(db)
         super().setQuery(query, connection)
         self.generateRoleNames()
-
     @QtCore.Slot(str)
     def setDatabaseName(self, db_name):
         self.db_name = db_name
@@ -196,6 +195,7 @@ class HolidayModel(QSqlQueryModel):
             modelIndex = self.index(index.row(), columnIdx)
             data = super().data(modelIndex, QtCore.Qt.DisplayRole)
         return data
+
 @QmlElement
 @QmlSingleton
 class PublicHolidayModel(QSqlQueryModel):

@@ -42,13 +42,13 @@ ScrollView {
     VerticalHeaderView{
         id: holidayVerticalHeader
         syncView: holidayView
+        clip: true
         anchors.left: holidayView.left
         anchors.top: holidayView.top
     }
     TableView{
         id: holidayView
         model: HolidayModel
-        implicitWidth: parent.implicitWidth
         implicitHeight: parent.height*2/3 - holidayEdit.height
         anchors.top: holiRect.bottom
         anchors.left: parent.left
@@ -56,9 +56,9 @@ ScrollView {
         topMargin: holidayHorizontalHeader.height
         leftMargin: holidayVerticalHeader.width
         boundsBehavior: Flickable.StopAtBounds
-        clip: true
         columnSpacing: 1
         rowSpacing: 1
+        clip: true
         property int selectedRow: 0
         property int selectedId: 0
         property bool selectionActive: false
@@ -78,10 +78,11 @@ ScrollView {
             MouseArea{
                 anchors.fill: parent
                 onClicked: {
-                    holidayView.selectedRow = row
-                    holidayView.selectedId = HolidayModel.idOf(row)
-                    holidayView.selectionActive = true
-                    DbController.selectHolidayEntry(holidayView.selectedId)
+                    holidayView.selectedRow = row;
+                    holidayView.selectedId = HolidayModel.idOf(row);
+                    holidayView.selectionActive = true;
+                    DbController.selectHolidayEntry(holidayView.selectedId);
+                    result.visible = false;
                 }
             }
         }
@@ -147,12 +148,75 @@ ScrollView {
             }
             Row{
                 Button{
+                    id: saveButton
                     text: "Save"
-                    onClicked: console.log("not implemented")
+                    enabled: holidayView.selectionActive
+                    onClicked: DbController.saveHolidayEntry(idField.text, dayField.text, hourField.text, yearField.text)
                 }
                 Button{
                     text: "Delete"
-                    onClicked: console.log("not implemented")
+                    enabled: holidayView.selectionActive
+                    onClicked: {
+                        DbController.deleteHolidayEntry(idField.text);
+                    }
+                }
+                Button{
+                    text: "New Entry"
+                    enabled: true
+                    onClicked: {
+                        idField.text = -1
+                        saveButton.enabled = true
+                    }
+                }
+            }
+            Text {
+                id: result
+                text: qsTr("")
+                visible: false
+            }
+            Connections{
+                target: DbController
+                function onHolidayEntrySaved(value){
+                    if(value){
+                        result.text = "Entry "+ idField.text + " successfully saved!";
+                        result.color = "green";
+                        idField.text = "";
+                        dayField.text = "";
+                        hourField.text = "";
+                        yearField.text = "";
+                    }else {
+                        result.text = "Error while writing to DB!";
+                        result.color = "red";
+                    }
+                    result.visible = true;
+                    DbController.updateHolidayQuery();
+                    saveButton.enabled = holidayView.selectionActive;
+                }
+                function onHolidayEntryDeleted(value){
+                    if(value){
+                        result.text = "Entry "+ idField.text + " successfully deleted!";
+                        result.color = "green";
+                        idField.text = "";
+                        dayField.text = "";
+                        hourField.text = "";
+                        yearField.text = "";
+                        holidayView.selectionActive = false;
+                    }else{
+                        result.text = "Error while writing to DB!";
+                        result.color = "red"
+                    }
+                    result.visible = true;
+                    DbController.updateHolidayQuery();
+                }
+                function onHolidayEntryDuplicate(id){
+                    result.text = "Date " + dayField.text + "Already exists! Please update existing record with ID = "+ id + "!";
+                    result.color = "yellow";
+                    result.visible = true;
+                }
+                function onHolidayEntryNew(id){
+                    result.text = "Successfully created new record with ID= " + id;
+                    result.color = "green";
+                    result.visible = true;
                 }
             }
         }
