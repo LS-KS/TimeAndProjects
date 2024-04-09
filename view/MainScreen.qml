@@ -150,7 +150,7 @@ Rectangle {
 
         delegate: Rectangle{
             id: entryDelegateRect
-            property bool selected: row == entries.selectedRow
+            property bool selected: row === entries.selectedRow
             implicitHeight: 30
             implicitWidth:  100
             color: entryDelegateRect.selected && entries.selectedActive? "green" : "black"
