@@ -246,28 +246,6 @@ class SickdayModel(QSqlQueryModel):
         self._roleNames = {}
         self.db_name = ""
 
-    @QtCore.Slot(str, str)
-    def setQuery(self, query: str, db: str):
-        #print(f"SickdayModel::setQuery called with {query = }, {db = }")
-        connection = QSqlDatabase().database(db)
-        super().setQuery(query, connection)
-        self.generateRoleNames()
-    @QtCore.Slot(str)
-    def setDatabaseName(self, db_name):
-        self.db_name = db_name
-    @QtCore.Slot(int, result=int)
-    def idOf(self, row):
-        index = self.index(row, 0)
-        data = int(self.data(index, 0))
-        #print(f"SickdayModel::idOf {data = }")
-        return data
-
-    def generateRoleNames(self):
-        self._roleNames = {}
-        for i in range(super().record().count()):
-            self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
-        #print(f"SickdayModel: generateRoleNames produced: {self._roleNames =}")
-
     def data(self, index:QModelIndex, role: int = ...):
         #print(f"SickdayModel: data called with {index = }, {role = }")
         data = None
@@ -278,3 +256,26 @@ class SickdayModel(QSqlQueryModel):
             modelIndex = self.index(index.row(), columnIdx)
             data = super().data(modelIndex, QtCore.Qt.DisplayRole)
         return data
+    def generateRoleNames(self):
+        self._roleNames = {}
+        for i in range(super().record().count()):
+            self._roleNames[QtCore.Qt.UserRole + i + 1] = super().record().fieldName(i)
+        #print(f"SickdayModel: generateRoleNames produced: {self._roleNames =}")
+    @QtCore.Slot(int, result=int)
+    def idOf(self, row):
+        index = self.index(row, 0)
+        data = int(self.data(index, 0))
+        print(f"SickdayModel::idOf {data = }")
+        return data
+
+    @QtCore.Slot(str, str)
+    def setQuery(self, query: str, db: str):
+        #print(f"SickdayModel::setQuery called with {query = }, {db = }")
+        connection = QSqlDatabase().database(db)
+        super().setQuery(query, connection)
+        self.generateRoleNames()
+    @QtCore.Slot(str)
+    def setDatabaseName(self, db_name):
+        self.db_name = db_name
+
+

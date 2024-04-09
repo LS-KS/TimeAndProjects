@@ -39,6 +39,10 @@ class DbController(QtCore.QObject):
     publicHolidayEntryNew = QtCore.Signal(int)
     publicHolidayEntrySaved = QtCore.Signal(bool)
     sickdayEntry = QtCore.Signal(int, str, str, str)
+    sickdayEntryDeleted = QtCore.Signal(bool)
+    sickdayEntryDuplicate = QtCore.Signal(int)
+    sickdayEntryNew = QtCore.Signal(int)
+    sickdayEntrySaved = QtCore.Signal(bool)
 
     def __init__(self):
         super().__init__(None)
@@ -190,15 +194,20 @@ class DbController(QtCore.QObject):
         del_query = f"DELETE FROM public_holidays WHERE id = {id}"
         query = QSqlQuery(del_query, QSqlDatabase().database(self.db_name))
         self.publicHolidayEntryDeleted.emit(query.exec())
-    @QtCore.Slot()
-    def discardEntry(self):
-        pass
+
+    @QtCore.Slot(int)
+    def deleteSickdayEntry(self, id):
+        print(f"DbController::deleteSickdayEntry called: {id = }")
+        del_query = f"DELETE FROM sickdays WHERE id = {id}"
+        query = QSqlQuery(del_query, QSqlDatabase().database(self.db_name))
+        self.sickdayEntryDeleted.emit(query.exec())
 
     @QtCore.Slot()
     def disconnect(self):
         QSqlDatabase.removeDatabase(self.db_name)
         self.db_name = ""
         self.logoutSuccess.emit()
+
     @QtCore.Slot(result = str)
     def getDailyHours(self):
         hours = self.daily_hours//1
@@ -439,6 +448,43 @@ class DbController(QtCore.QObject):
         else:
             print("Metadata saved successfully")
 
+    @QtCore.Slot(int, str, str, str)
+    def saveSickdayEntry(self, id, day, hours, year):
+        r_query = f"SELECT * FROM sickdays WHERE day = '{day}' AND year = '{self.year}'"
+        query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+        if not query.exec():
+            print("Error executing query:", query.lastError().text())
+            return
+        if query.next():
+            existing_id = int(query.value(0))
+            if id == -1:
+                self.sickdayEntryDuplicate.emit(existing_id)
+                return
+            elif id >= 0 and existing_id != id:
+                self.sickdayEntryDuplicate.emit(existing_id)
+                return
+        if id >= 0:
+            update_query = f"UPDATE sickdays SET day = '{day}', hours = '{hours}', year = '{hours}' WHERE id = {id}"
+            query = QSqlQuery(update_query, QSqlDatabase().database(self.db_name))
+            self.sickdayEntrySaved.emit(query.exec())
+        elif id == -1:
+            insert_query = f"INSERT INTO sickdays (day, hours, year) VALUES ('{day}', '{hours}', '{year}')"
+            query = QSqlQuery(QSqlDatabase().database(self.db_name))
+            if not query.exec(insert_query):
+                print("Error executing query:", query.lastError().text())
+            else:
+                self.sickdayEntrySaved.emit(True)
+
+            r_query = f"SELECT id FROM sickdays WHERE day = '{day}' AND year = '{self.year}'"
+            query = QSqlQuery(r_query, QSqlDatabase().database(self.db_name))
+            if not query.exec():
+                print("Error executing query:", query.lastError().text())
+                return
+            if query.next():
+                id = int(query.value(0))
+                self.sickdayEntryNew.emit(id)
+
+
     @QtCore.Slot(int)
     def selectHolidayEntry(self, id):
         r_query = f"SELECT * FROM holidays WHERE id = {id}"
@@ -505,4 +551,6 @@ class DbController(QtCore.QObject):
     def updatePublicHolidayQuery(self):
         self.publicHolidayQueryChanged.emit(f"SELECT * FROM public_holidays WHERE year = {self.year}", self.db_name)
 
-
+    @QtCore.Slot()
+    def updateSickdayQuery(self):
+        self.sickdayQueryChanged.emit(f"SELECT * FROM sickdays WHERE year = {self.year}", self.db_name)
