@@ -325,11 +325,11 @@ Rectangle {
                         target: EntryModel
                         function onEntryData(record_id, topic, username, description, year, date, start, end, duration){
                             if( topic !== topics.topic){
-                                console.log("Topic does not match database topic. Should not be here!")
-                                console.log("topic= " + topic + " topic.topics = " + topics.topic)
+                                //console.log("Topic does not match database topic. Should not be here!")
+                                //console.log("topic= " + topic + " topic.topics = " + topics.topic)
                                 return;
                             }
-                            console.log("loading entry "+ record_id);
+                            //console.log("loading entry "+ record_id);
                             recordIDField.text = record_id;
                             topicIdField.text = topics.topicID;
                             topicNameField.text = topic;

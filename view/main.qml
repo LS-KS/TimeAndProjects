@@ -139,7 +139,7 @@ ApplicationWindow{
         target: DbController
         function onLoginSuccess(result){
             if (result){
-                console.log("Login success")
+                //console.log("Login success")
                 stackView.push(mainScreen)
             }
             else{
@@ -160,15 +160,15 @@ ApplicationWindow{
             EntryModel.setQuery(query, db_name)
         }
         function onHolidayQueryChanged(query, db_name){
-            console.log("query of HolidayModel changed" + query +", " + db_name);
+            //console.log("query of HolidayModel changed" + query +", " + db_name);
             HolidayModel.setQuery(query, db_name);
         }
         function onPublicHolidayQueryChanged(query, db_name){
-            console.log("query of PublicHolidayModel changed" + query +", " + db_name);
+            //console.log("query of PublicHolidayModel changed" + query +", " + db_name);
             PublicHolidayModel.setQuery(query, db_name);
         }
         function onSickdayQueryChanged(query, db_name){
-            console.log("query of SickdayModel changed" + query +", " + db_name);
+            //console.log("query of SickdayModel changed" + query +", " + db_name);
             SickdayModel.setQuery(query, db_name);
         }
         function onNewYear(year){

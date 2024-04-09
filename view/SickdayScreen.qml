@@ -84,7 +84,7 @@ ScrollView {
         Connections{
             target: DbController
             function onSickdayEntry(id, day, hours, year){
-                console.log("id = "+id + "day: "+ day + "hours: " + hours + "year: "+ year)
+                //console.log("id = "+id + "day: "+ day + "hours: " + hours + "year: "+ year)
                 idField.text = id;
                 dayField.text = day;
                 hourField.text = hours;
@@ -198,6 +198,7 @@ ScrollView {
                     }
                     result.visible = true;
                     DbController.updateSickdayQuery();
+                    DbController.getSickDayCount();
                     saveButton.enabled = sickdayView.selectionActive;
                 }
                 function onSickdayEntryDeleted(value){
@@ -215,6 +216,7 @@ ScrollView {
                     }
                     result.visible = true;
                     DbController.updateSickdayQuery();
+                    DbController.getSickDayCount();
                 }
                 function onSickdayEntryDuplicate(id){
                     result.text = "Date " + dayField.text + "Already exists! Please update existing record with ID = "+ id + "!";

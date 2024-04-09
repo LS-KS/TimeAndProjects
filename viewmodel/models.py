@@ -265,7 +265,7 @@ class SickdayModel(QSqlQueryModel):
     def idOf(self, row):
         index = self.index(row, 0)
         data = int(self.data(index, 0))
-        print(f"SickdayModel::idOf {data = }")
+        #print(f"SickdayModel::idOf {data = }")
         return data
 
     @QtCore.Slot(str, str)

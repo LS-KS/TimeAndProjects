@@ -99,7 +99,7 @@ class DbController(QtCore.QObject):
             # Iterate over the results
             while query.next():
                 year = query.value(0)
-                print(f"query year: {year}")
+                #print(f"query year: {year}")
                 self.newYear.emit(year)
 
             self.loginSuccess.emit(True)
@@ -197,7 +197,7 @@ class DbController(QtCore.QObject):
 
     @QtCore.Slot(int)
     def deleteSickdayEntry(self, id):
-        print(f"DbController::deleteSickdayEntry called: {id = }")
+        #print(f"DbController::deleteSickdayEntry called: {id = }")
         del_query = f"DELETE FROM sickdays WHERE id = {id}"
         query = QSqlQuery(del_query, QSqlDatabase().database(self.db_name))
         self.sickdayEntryDeleted.emit(query.exec())
@@ -329,7 +329,7 @@ class DbController(QtCore.QObject):
     def setYear(self, year):
         if self.db_name == "":
             return
-        print(self.db_name)
+        #print(self.db_name)
         self.year = year
         self.topicQueryChanged.emit(
             f"SELECT  DISTINCT  topics.id, topics.topic  FROM topics INNER JOIN timecapturing ON topics.topic = timecapturing.topic WHERE timecapturing.year = {self.year} GROUP BY topics.topic",
@@ -497,7 +497,7 @@ class DbController(QtCore.QObject):
             day = query.value(2)
             hours = query.value(3)
             self.holidayEntry.emit(id, day, hours, str(year))
-            print(f"selectHolidayEntry: {id = }, {day = }, {hours = }, {year = }")
+            #print(f"selectHolidayEntry: {id = }, {day = }, {hours = }, {year = }")
 
     @QtCore.Slot(int)
     def selectPublicHolidayEntry(self, id):
@@ -506,14 +506,14 @@ class DbController(QtCore.QObject):
         if not query.exec():
             print("Error executing query:", query.lastError().text())
             return
-        print(f"DbController::selectPublicHolidayEntry called: {id = }")
+        #print(f"DbController::selectPublicHolidayEntry called: {id = }")
         if query.next():
             found_id = query.value(0)
             day = query.value(2)
             description = query.value(3)
             hours = query.value(4)
             self.publicHolidayEntry.emit(id, day, description, hours, self.year)
-            print(f"DbController::selectPublicHolidayEntry: {id = },{found_id= }, {day = }, {description = }, {hours = }, {self.year = }")
+            #print(f"DbController::selectPublicHolidayEntry: {id = },{found_id= }, {day = }, {description = }, {hours = }, {self.year = }")
         else:
             print(f"DbController::selectPublicHolidayEntry: No record found {id = }")
 

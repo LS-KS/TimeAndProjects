@@ -75,7 +75,7 @@ ScrollView {
                 onClicked: {
                     pholidayView.selectedRow = row;
                     pholidayView.selectedId = PublicHolidayModel.idOf(row);
-                    console.log("selected Row - ID: " + pholidayView.selectedId)
+                    //console.log("selected Row - ID: " + pholidayView.selectedId)
                     pholidayView.selectionActive = true;
                     DbController.selectPublicHolidayEntry(pholidayView.selectedId);
                     result.visible = false;
@@ -85,7 +85,7 @@ ScrollView {
         Connections{
             target: DbController
             function onPublicHolidayEntry(id, day, description, hours, year){
-                console.log("id = "+id + "day: "+ day + "description: " + description + "hours: " + hours + "year: "+ year)
+                //console.log("id = "+id + "day: "+ day + "description: " + description + "hours: " + hours + "year: "+ year)
                 idField.text = id;
                 dayField.text = day;
                 descriptionField.text = description;
@@ -159,13 +159,17 @@ ScrollView {
                     id: saveButton
                     text: "Save"
                     enabled: pholidayView.selectionActive
-                    onClicked: DbController.savePublicHolidayEntry(idField.text, dayField.text, descriptionField.text, hourField.text, yearField.text)
+                    onClicked: {
+                        DbController.savePublicHolidayEntry(idField.text, dayField.text, descriptionField.text, hourField.text, yearField.text);
+                        DbController.getPublicHolidayCount();
+                    }
                 }
                 Button{
                     text: "Delete"
                     enabled: pholidayView.selectionActive
                     onClicked: {
                         DbController.deletePublicHolidayEntry(idField.text);
+                        DbController.getPublicHolidayCount();
                     }
                 }
                 Button{

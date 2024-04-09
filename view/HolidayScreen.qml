@@ -90,7 +90,7 @@ ScrollView {
         Connections{
             target: DbController
             function onHolidayEntry(id, day, hours, year){
-                console.log("id = "+id + "day: "+ day + "hours: " + hours + "year: "+ year)
+                //console.log("id = "+id + "day: "+ day + "hours: " + hours + "year: "+ year)
                 idField.text = id;
                 dayField.text = day;
                 hourField.text = hours;
@@ -151,13 +151,17 @@ ScrollView {
                     id: saveButton
                     text: "Save"
                     enabled: holidayView.selectionActive
-                    onClicked: DbController.saveHolidayEntry(idField.text, dayField.text, hourField.text, yearField.text)
+                    onClicked: {
+                        DbController.saveHolidayEntry(idField.text, dayField.text, hourField.text, yearField.text)
+                        DbController.getUsedHolidays();
+                    }
                 }
                 Button{
                     text: "Delete"
                     enabled: holidayView.selectionActive
                     onClicked: {
                         DbController.deleteHolidayEntry(idField.text);
+                        DbController.getUsedHolidays();
                     }
                 }
                 Button{
