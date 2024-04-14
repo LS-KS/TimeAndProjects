@@ -6,6 +6,7 @@ from matplotlib.patches import Shadow
 import pandas
 import pandas as pd
 import numpy as np
+import service.bubbleRenderer as bubbleRenderer
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.pdfencrypt import StandardEncryption
@@ -180,6 +181,7 @@ class ReportService:
         self._generate_overtime_figure()
         self._generate_project_pie()
         self._generate_project_bubbles()
+        self._generate_project_gradient_bubbles()
 
     def set_data(self, holidays: pandas.DataFrame, projects: pandas.DataFrame, public_holidays: pandas.DataFrame,
                  sick_leave: pandas.DataFrame,
@@ -476,6 +478,25 @@ class ReportService:
         ax.axis('off')
         # fig.set_facecolor('#0012bf')
         plt.savefig(self.imagefile_project_bubbles)
+    def _generate_project_gradient_bubbles(self) -> None:
+        br = bubbleRenderer.BubbleRenderer(
+            size=(3000, 3000),
+            background_color='white',
+            cmap=[
+                'white',
+                SECONDARY_PALETTE[0],
+            ],
+            packing='circle',
+            png=True,
+            file=self.imagefile_project_gradientbubbles,
+            data=self.projects["Dauer"].to_list(),
+            labels=self.projects["Projekt"].to_list(),
+        )
+        br.render()
+        br.text_size = 50
+        br.gradient_stops = [0, 50, 90, 100]
+        img = br.render()
+
     def _generate_project_pie(self) -> None:
         self.projects = self.dataframe_worktimelog.groupby("Projekt")["Dauer"].sum().reset_index()
         fig, ax = plt.subplots(figsize=(15, 15))
@@ -623,6 +644,7 @@ class ReportService:
         axes[1, 0].set_xticklabels(days, color=PRIMARY_PALETTE[0])
         axes[1, 0].set_yticks(range(len(times))[::-1])
         axes[1, 0].set_yticklabels(timelabels, color=PRIMARY_PALETTE[0])
+        axes[1, 0].set_zticks([0, 0.25, 0.5, 0.75, 1])
         axes[1, 0].set_zticklabels([0, 0.25, 0.5, 0.75, 1], color=PRIMARY_PALETTE[0])
 
         axes[1, 1].plot(days, cummulative_days, color=PRIMARY_PALETTE[0])
