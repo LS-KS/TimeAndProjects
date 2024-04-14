@@ -66,6 +66,13 @@ ApplicationWindow{
             Action { text: qsTr("&Quit") }
         }
         Menu {
+            title: qsTr("&Edit")
+            Action{
+                text: qsTr("&Generate Report (PDF)")
+                onTriggered: DbController.generateReport()
+            }
+        }
+        Menu {
             title: qsTr("&Help")
             Action { text: qsTr("&About") }
         }
