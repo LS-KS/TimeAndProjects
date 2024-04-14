@@ -21,6 +21,11 @@ SECONDARY_PALETTE = ['#f26600', '#f28600', '#f29700', '#f2a900', '#f2b700', '#f3
                      '#fdf7e0']
 ACCENT = '#f31b4d'
 
+def color_dict(gradient):
+  ''' Takes in a list of RGB sub-lists and returns dictionary of
+    colors in RGB and hex form for use in a graphing function
+    defined later on '''
+  return [RGB_to_hex(RGB) for RGB in gradient]
 
 def hex_to_rgb(hex_color) -> list:
     """Convert hexadecimal color code to 8-bit RGB values."""
@@ -31,9 +36,59 @@ def hex_to_rgb(hex_color) -> list:
     rgb = [x / 255 for x in rgb]
     return rgb
 
+def hex_to_RGB(hex):
+  ''' "#FFFFFF" -> [255,255,255] '''
+  # Pass 16 to the integer function for change of base
+  return [int(hex[i:i+2], 16) for i in range(1,6,2)]
+
+def RGB_to_hex(RGB):
+  ''' [255,255,255] -> "#FFFFFF" '''
+  # Components need to be integers for hex to make sense
+  RGB = [int(x) for x in RGB]
+  return "#"+"".join(["0{0:x}".format(v) if v < 16 else
+            "{0:x}".format(v) for v in RGB])
+
+def linear_gradient(start_hex, finish_hex="#FFFFFF", n=10):
+    ''' returns a gradient list of (n) colors between
+      two hex colors. start_hex and finish_hex
+      should be the full six-digit color string,
+      inlcuding the number sign ("#FFFFFF") '''
+    # Starting and ending colors in RGB form
+    s = hex_to_RGB(start_hex)
+    f = hex_to_RGB(finish_hex)
+    # Initilize a list of the output colors with the starting color
+    RGB_list = [s]
+    # Calcuate a color at each evenly spaced value of t from 1 to n
+    for t in range(1, n):
+        # Interpolate RGB vector for color at the current value of t
+        curr_vector = [
+          int(s[j] + (float(t)/(n-1))*(f[j]-s[j]))
+          for j in range(3)
+        ]
+        # Add it to our list of output colors
+        RGB_list.append(curr_vector)
+
+    return color_dict(RGB_list)
 
 class ReportService:
     def __init__(self):
+        self.actual_overtime: float = 0.0
+        self.author: str = ""
+        self.company_phone: str = ""
+        self.company_email: str = ""
+        self.company_zip: str = "None"
+        self.company_city: str = ""
+        self.company_street: str = ""
+        self.company_name: str = ""
+        self.cumu = 'temp/Häufigkeitsverteilung.png'
+        self.database_name = ''
+        self.dataframe_holidays: pandas.DataFrame = pandas.DataFrame()
+        self.dataframe_projects: pandas.DataFrame = pandas.DataFrame()
+        self.dataframe_public_holidays: pandas.DataFrame = pandas.DataFrame()
+        self.dataframe_sickleave: pandas.DataFrame = pandas.DataFrame()
+        self.dataframe_worktimelog: pandas.DataFrame = pandas.DataFrame()
+        self.document: ReportTemplate = None
+        self.document_elements = []
         self.employee_id: str = ""
         self.employee_phone: str = ""
         self.employee_email: str = ""
@@ -41,27 +96,10 @@ class ReportService:
         self.employee_city: str = ""
         self.employee_street: str = ""
         self.employee_name: str = ""
-        self.company_phone: str = ""
-        self.company_email: str = ""
-        self.company_zip: str = "None"
-        self.company_city: str = ""
-        self.company_street: str = ""
-        self.company_name: str = ""
-        self.actual_overtime: float = 0.0
-        self.author: str = ""
-        self.cumu = 'temp/Häufigkeitsverteilung.png'
-        self.database_name = 'timecapturing.db'
-        self.dataframe_holidays: pandas.DataFrame = pandas.DataFrame()
-        self.dataframe_projects: pandas.DataFrame = pandas.DataFrame()
-        self.dataframe_public_holidays: pandas.DataFrame = pandas.DataFrame()
-        self.dataframe_sickleave: pandas.DataFrame = pandas.DataFrame()
-        self.dataframe_worktimelog: pandas.DataFrame = pandas.DataFrame()
         self.holiday_contract: float = 0.0
         self.holiday_used: float = 0.0
         self.hours_daily: float = 0.0
         self.hours_weekly: float = 0.0
-        self.document: ReportTemplate = None
-        self.document_elements = []
         self.imagefile_overtime = "temp/Überstundenverlauf.png"
         self.imagefile_project_bubbles = 'temp/ProjektzeitenBubble.png'
         self.imagefile_project_gradientbubbles = "temp/bubbles.png"
@@ -71,6 +109,7 @@ class ReportService:
         self.language_code: str = "de_DE"
         self.overtime = 'temp/Überstundenverlauf.png'
         self.pdf_file = 'temp/report.pdf'
+        self.projects = pd.DataFrame()
         self.sick_leave: float = 0.0
         self.table_styles = [
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(PRIMARY_PALETTE[2])),
@@ -140,6 +179,7 @@ class ReportService:
         self._generate_worktime_probability_figure()
         self._generate_overtime_figure()
         self._generate_project_pie()
+        self._generate_project_bubbles()
 
     def set_data(self, holidays: pandas.DataFrame, projects: pandas.DataFrame, public_holidays: pandas.DataFrame,
                  sick_leave: pandas.DataFrame,
@@ -419,10 +459,27 @@ class ReportService:
         fig2.tight_layout()
         fig2.savefig(self.imagefile_overtime, transparent=True)
 
+    def _generate_project_bubbles(self) -> None:
+        colors = linear_gradient('#f29700', '#f26600', len(self.projects["Projekt"]))
+        colors = [PRIMARY_PALETTE[0], SECONDARY_PALETTE[0]]
+        cmap = LinearSegmentedColormap.from_list('custom_colormap', colors, N=len(self.projects))
+        fig, ax = plt.subplots(figsize=(15, 10))
+        scaling_factor = 200
+        ax.scatter(self.projects["Dauer"], self.projects["Projekt"], s=self.projects["Dauer"] ** 1.5 * scaling_factor,
+                   cmap=cmap)
+        ax.set_xscale('log')
+
+        for i, txt in enumerate(self.projects["Projekt"]):
+            ax.annotate(f"""{txt}\n{self.projects["Dauer"][i]}h""",
+                        (self.projects["Dauer"][i], self.projects["Projekt"][i]), fontsize=8, ha='center', va='center',
+                        color='black')
+        ax.axis('off')
+        # fig.set_facecolor('#0012bf')
+        plt.savefig(self.imagefile_project_bubbles)
     def _generate_project_pie(self) -> None:
-        projects = self.dataframe_worktimelog.groupby("Projekt")["Dauer"].sum().reset_index()
+        self.projects = self.dataframe_worktimelog.groupby("Projekt")["Dauer"].sum().reset_index()
         fig, ax = plt.subplots(figsize=(15, 15))
-        pies, texts, autotexts = ax.pie(projects["Dauer"], labels=projects["Projekt"], autopct='%1.1f%%',
+        pies, texts, autotexts = ax.pie(self.projects["Dauer"], labels=self.projects["Projekt"], autopct='%1.1f%%',
                                         startangle=0, colors=PRIMARY_PALETTE[0:7])
         for pie in pies:
             pie.set_edgecolor(PRIMARY_PALETTE[0])
