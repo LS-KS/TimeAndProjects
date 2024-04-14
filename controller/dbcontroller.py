@@ -281,7 +281,13 @@ class DbController(QtCore.QObject):
             print("Error executing query:", query.lastError().text())
             return None, None
         while query.next():
-            holidays.append({"Tag": query.value(0), "Angerechnete Stunden": query.value(1)})
+            try:
+                to_add = 0
+                time_string = query.value(1).split(":")
+                for x in range(len(time_string)): to_add += float(time_string[x]) ** (x+1)
+            except:
+                to_add = float(query.value(1))
+            holidays.append({"Tag": query.value(0), "Angerechnete Stunden": float(to_add)})
         holidays = pd.DataFrame(holidays)
         return count, holidays
     def _gen_public_holidays(self)->(float, pd.DataFrame):
@@ -296,12 +302,12 @@ class DbController(QtCore.QObject):
             try:
                 to_add = 0
                 time_string = query.value(2).split(":")
-                for x in range(3): to_add += float(time_string[x]) ** x
+                for x in range(len(time_string)): to_add += float(time_string[x]) ** (x + 1)
             except ValueError:
                 to_add = float(query.value(2))
             total += to_add
             public_holidays.append(
-                {"Tag": query.value(0), "Feiertag": query.value(1), "Angerechnete Stunden": query.value(2)})
+                {"Tag": query.value(0), "Feiertag": query.value(1), "Angerechnete Stunden": to_add})
         public_holidays = pd.DataFrame(public_holidays)
         return total/self.daily_hours, public_holidays
     def _gen_overtime(self)->float:
@@ -320,15 +326,15 @@ class DbController(QtCore.QObject):
             topic_query = f"SELECT date, duration FROM timecapturing WHERE year = {self.year} AND topic = '{topic}'"
             query = QSqlQuery(topic_query, QSqlDatabase().database(self.db_name))
             if query.exec():
-                timesum = 0
+                to_add = 0
                 while query.next():
                     try:
                         value = query.value(1)
-                        splits = str(value).split(":")
-                        timesum += int(splits[0]) + float(splits[1]) / 60 + float(splits[2]) / 3600
+                        time_string = str(value).split(":")
+                        for x in range(len(time_string)): to_add += float(time_string[x]) ** (x+1)
                     except ValueError:
-                        timesum += float(value)
-                projects.append({"Projekt": topic, "Dauer": timesum})
+                        to_add += float(value)
+                projects.append({"Projekt": topic, "Dauer": to_add})
             else:
                 print(f"Error executing query for: {topic}", query.lastError().text())
         projects = pd.DataFrame(projects)
@@ -345,11 +351,11 @@ class DbController(QtCore.QObject):
             try:
                 to_add = 0
                 time_string = query.value(1).split(":")
-                for x in range(3): to_add += float(time_string[x])**x
+                for x in range(len(time_string)): to_add += float(time_string[x])**x
             except ValueError:
                 to_add = float(query.value(1))
             total += to_add
-            sick_leave.append({"Tag": query.value(0), "Angerechnete Stunden": query.value(1)})
+            sick_leave.append({"Tag": query.value(0), "Angerechnete Stunden": to_add})
         sick_leave = pd.DataFrame(sick_leave)
         return total/self.daily_hours ,sick_leave
     def _gen_worktimelog(self)->pd.DataFrame:
@@ -360,9 +366,15 @@ class DbController(QtCore.QObject):
             print("Error executing query:", query.lastError().text())
             return None
         while query.next():
+            try:
+                splits = str(query.value(5)).split(":")
+                time = 0
+                for i in range(len(splits)): time += float(splits[i]) ** i
+            except ValueError:
+                time = float(query.value(5))
             worktimelog.append(
                 {"Tag": query.value(0), "Beginn": query.value(1), "Ende": query.value(2), "Projekt": query.value(3),
-                 "Tätigkeit": query.value(4), "Dauer": query.value(5)})
+                 "Tätigkeit": query.value(4), "Dauer": time})
         worktimelog = pd.DataFrame(worktimelog)
         return worktimelog
     @QtCore.Slot(result=str)

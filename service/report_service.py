@@ -1,6 +1,8 @@
 from time import strftime
-
+from datetime import datetime
+import matplotlib.pyplot as plt
 import pandas
+import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.pdfencrypt import StandardEncryption
@@ -109,14 +111,15 @@ class ReportService:
         self.year = strftime('%Y')
 
     def build_document(self):
+        self.generate_plots()
         self._create_document()
         self._create_title()
         self._create_intro()
         self._create_toc()
         self._create_summary()
+        self._create_worktime_plot()
         self._create_overtime_plot()
         self._create_project_plot()
-        self._create_worktime_plot()
         self._create_worktime_probability_plot()
         self._create_details_holidays()
         self._create_details_public_holidays()
@@ -124,6 +127,9 @@ class ReportService:
         self._create_details_worktime()
         self._encrypt_document()
         self.document.multiBuild(self.document_elements)
+
+    def generate_plots(self):
+        self._generate_worktime_figure()
 
     def set_data(self, holidays: pandas.DataFrame, projects: pandas.DataFrame, public_holidays: pandas.DataFrame,
                  sick_leave: pandas.DataFrame,
@@ -348,6 +354,65 @@ class ReportService:
             ownerPassword="12345"
         )
 
+    def _generate_worktime_figure(self):
+        if self.year == datetime.now().strftime('%Y'):
+            actual_KW = datetime.now().isocalendar()[1]
+        else:
+            actual_KW = None
+        last_week_of_year = datetime.strptime(f"{self.year}-12-31", "%Y-%m-%d").isocalendar()[1]
+        weeklist = list(range(1, last_week_of_year + 1))
+        weeklist = pd.DataFrame(weeklist, columns=["KW"])
+        self.dataframe_worktimelog["Tag"] = pandas.to_datetime(self.dataframe_worktimelog["Tag"])
+        self.dataframe_worktimelog["KW"] = self.dataframe_worktimelog["Tag"].dt.isocalendar().week
+
+
+        daily = self.dataframe_worktimelog.groupby("Tag").sum()
+        weeklist["Dauer"] = 0 #initialize duration column with 0
+        weeklist["Urlaub"] = 0 #initialize holiday column with 0
+        weeklist["Feiertag"] = 0 #initialize public holiday column with 0
+        weeklist["Krank"] = 0 #initialize sick leave column with 0
+        self.dataframe_holidays["Tag"] = pandas.to_datetime(self.dataframe_holidays["Tag"])
+        self.dataframe_holidays["KW"] = self.dataframe_holidays["Tag"].dt.isocalendar().week
+        self.dataframe_public_holidays["Tag"] = pandas.to_datetime(self.dataframe_public_holidays["Tag"])
+        self.dataframe_public_holidays["KW"] = self.dataframe_public_holidays["Tag"].dt.isocalendar().week
+        self.dataframe_sickleave["Tag"] = pandas.to_datetime(self.dataframe_sickleave["Tag"])
+        self.dataframe_sickleave["KW"] = self.dataframe_sickleave["Tag"].dt.isocalendar().week
+        for idx, row in weeklist.iterrows():
+            if row["KW"] in self.dataframe_holidays["KW"].values:
+                weeklist.at[idx, "Urlaub"] = self.dataframe_holidays[self.dataframe_holidays["KW"] == row["KW"]]["Angerechnete Stunden"].sum()
+            if row["KW"] in self.dataframe_public_holidays["KW"].values:
+                weeklist.at[idx, "Feiertag"] = self.dataframe_public_holidays[self.dataframe_public_holidays["KW"] == row["KW"]]["Angerechnete Stunden"].sum()
+            if row["KW"] in self.dataframe_sickleave["KW"].values:
+                weeklist.at[idx, "Krank"] = self.dataframe_sickleave[self.dataframe_sickleave["KW"] == row["KW"]]["Angerechnete Stunden"].sum()
+            if row["KW"] in daily["KW"].values:
+                weeklist.at[idx, "Dauer"] = daily[daily["KW"] == row["KW"]]["Dauer"].sum()
+        weeklist["Gesamt"] = weeklist["Dauer"] + weeklist["Urlaub"] + weeklist["Feiertag"] + weeklist["Krank"]
+        fig, ax = plt.subplots(figsize=(20, 10), )
+        bar1 = ax.bar(weeklist["KW"], weeklist["Gesamt"],
+                      label="Ist-Wochenstunden inkl. Urlaub, Feiertag und Krank", color=PRIMARY_PALETTE[2])
+        bar2 = ax.bar(weeklist["KW"], weeklist["Dauer"], label="Ist-Wochenstunden",
+                      color=SECONDARY_PALETTE[2])
+        ax.axhline(y=self.hours_weekly, color=ACCENT, linestyle='--', label='Soll-Wochenstunden')
+        ax.axhline(y=self.hours_weekly / 5, color=ACCENT, linestyle='--', linewidth=0.5)
+        ax.axhline(y=self.hours_weekly * 2 / 5, color=ACCENT, linestyle='--', linewidth=0.5)
+        ax.axhline(y=self.hours_weekly * 3 / 5, color=ACCENT, linestyle='--', linewidth=0.5)
+        ax.axhline(y=self.hours_weekly * 4 / 5, color=ACCENT, linestyle='--', linewidth=0.5)
+        if actual_KW is not None:
+            ax.axvline(x=actual_KW, linestyle='-', linewidth=5, label='Aktuelle Kalenderwoche', color=ACCENT)
+        ax.spines['top'].set_color(PRIMARY_PALETTE[0])
+        ax.spines['bottom'].set_color(PRIMARY_PALETTE[0])
+        ax.spines['left'].set_color(PRIMARY_PALETTE[0])
+        ax.spines['right'].set_color(PRIMARY_PALETTE[0])
+        ax.set_title("Arbeitszeit je Kalenderwoche", color=PRIMARY_PALETTE[0])
+        ax.set_xlabel("Kalenderwoche", color=PRIMARY_PALETTE[0])
+        ax.set_xticks(weeklist["KW"])
+        ax.set_xticklabels(weeklist["KW"], color=PRIMARY_PALETTE[0])
+        ax.set_ylabel("Arbeitszeit [h]", color=PRIMARY_PALETTE[0])
+        ax.set_yticks(ax.get_yticks())
+        ax.set_yticklabels(ax.get_yticks(), color=PRIMARY_PALETTE[0])
+        ax.legend(labelcolor=PRIMARY_PALETTE[0])
+        fig.tight_layout()
+        plt.savefig(self.imagefile_worktime, transparent=True)
 
 class ReportTemplate(BaseDocTemplate):
     def __init__(self, filename, **kw):
