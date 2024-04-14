@@ -2,6 +2,7 @@ from time import strftime
 from datetime import datetime
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.patches import Shadow
 import pandas
 import pandas as pd
 import numpy as np
@@ -66,6 +67,7 @@ class ReportService:
         self.imagefile_project_gradientbubbles = "temp/bubbles.png"
         self.imagefile_project_pie = 'temp/Projektzeiten.png'
         self.imagefile_worktime = 'temp/Arbeitszeitverlauf.png'
+        self.imagefile_worktime_probability = "temp/Häufigkeitsverteilung.png"
         self.language_code: str = "de_DE"
         self.overtime = 'temp/Überstundenverlauf.png'
         self.pdf_file = 'temp/report.pdf'
@@ -135,7 +137,9 @@ class ReportService:
     def generate_plots(self):
 
         self._generate_worktime_figure() # must be called at first to generate self.weeklist
+        self._generate_worktime_probability_figure()
         self._generate_overtime_figure()
+        self._generate_project_pie()
 
     def set_data(self, holidays: pandas.DataFrame, projects: pandas.DataFrame, public_holidays: pandas.DataFrame,
                  sick_leave: pandas.DataFrame,
@@ -415,6 +419,28 @@ class ReportService:
         fig2.tight_layout()
         fig2.savefig(self.imagefile_overtime, transparent=True)
 
+    def _generate_project_pie(self) -> None:
+        projects = self.dataframe_worktimelog.groupby("Projekt")["Dauer"].sum().reset_index()
+        fig, ax = plt.subplots(figsize=(15, 15))
+        pies, texts, autotexts = ax.pie(projects["Dauer"], labels=projects["Projekt"], autopct='%1.1f%%',
+                                        startangle=0, colors=PRIMARY_PALETTE[0:7])
+        for pie in pies:
+            pie.set_edgecolor(PRIMARY_PALETTE[0])
+            pie.set_linewidth(0.75)
+            pie.set_gid(pie.get_label())
+            s = Shadow(pie, -0.05, -0.05, color=PRIMARY_PALETTE[-1])
+            s.set_gid(pie.get_gid() + '_shadow')
+            s.set_zorder(pie.get_zorder() - 0.1)
+            ax.add_patch(s)
+
+        for i, text in enumerate(autotexts):
+            text.set_color(SECONDARY_PALETTE[i % 4])
+            text.set_fontsize(12)
+
+        for i, text in enumerate(texts):
+            text.set_color(SECONDARY_PALETTE[i % 4])
+            text.set_fontsize(12)
+        plt.savefig(self.imagefile_project_pie)
     def _generate_worktime_figure(self) -> None:
         if self.year == datetime.now().strftime('%Y'):
             actual_KW = datetime.now().isocalendar()[1]
@@ -486,11 +512,12 @@ class ReportService:
 
         for idx, row in self.dataframe_worktimelog.iterrows():
             day = row["Tag"].weekday()
-            start = row["Beginn"]
+            start = datetime.strptime(row["Beginn"], '%H:%M:%S')
             start = start.replace(minute=(start.minute // 15) * 15)
-            end = row.Ende
-            start_index = times.index(strftime(start,'%H:%M'))
-            end_index = times.index(strftime(end,'%H:%M'))
+            end = datetime.strptime(row["Ende"], '%H:%M:%S')
+            end = end.replace(minute=(end.minute // 15) * 15)
+            start_index = times.index(start.strftime('%H:%M'))
+            end_index = times.index(end.strftime('%H:%M'))
             map[day, start_index:end_index] += 1
         map = map / np.max(map)
 
@@ -517,6 +544,7 @@ class ReportService:
         axes[0, 0].plot(cummulative_time, times[::-1], color=PRIMARY_PALETTE[0])
         axes[0, 0].set_xlabel("Häufigkeit", color=PRIMARY_PALETTE[0])
         axes[0, 0].set_ylabel("Uhrzeit", color=PRIMARY_PALETTE[0])
+        axes[0, 0].set_yticks(axes[0, 0].get_yticks())
         axes[0, 0].set_yticklabels(timelabels, color=PRIMARY_PALETTE[0])
         axes[0, 0].set_xticks([0, 0.25, 0.5, 0.75, 1])
         axes[0, 0].set_xticklabels(axes[0, 0].get_xticks(), color=PRIMARY_PALETTE[0])
@@ -542,14 +570,13 @@ class ReportService:
 
         axes[1, 1].plot(days, cummulative_days, color=PRIMARY_PALETTE[0])
         axes[1, 1].set_title("Häufigkeit Arbeitszeit je Wochentag", color=PRIMARY_PALETTE[0])
+        axes[1, 1].set_xticks(axes[1, 1].get_xticks())
         axes[1, 1].set_xlabel("Wochentag", color=PRIMARY_PALETTE[0])
         axes[1, 1].set_xticklabels(days, color=PRIMARY_PALETTE[0])
         axes[1, 1].set_yticks([0, 0.25, 0.5, 0.75, 1])
         axes[1, 1].set_ylabel("Häufigkeit", color=PRIMARY_PALETTE[0])
         axes[1, 1].set_yticklabels(axes[1, 1].get_yticks(), color=PRIMARY_PALETTE[0])
-        plt.savefig("Häufigkeitsverteilung.png")
-
-
+        plt.savefig(self.imagefile_worktime_probability, transparent=True)
 
 class ReportTemplate(BaseDocTemplate):
     def __init__(self, filename, **kw):
